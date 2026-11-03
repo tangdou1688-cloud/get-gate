@@ -164,6 +164,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
 | `SECRET_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<SECRET_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |
 | `NODES_URL` | 按 `SITE_URL` + `SECRET_KEY` 自动拼接 | 固定订阅地址（fork 后改成你自己的） |
+| `PREVIOUS_DATA_URL` | 按 `SITE_URL` + `SECRET_KEY` 自动拼接的 `data.json` | 上一轮产物，用作"历史节点"来源：本轮会把其中的可用节点合并进来一起复检，仍可用就保留，刷新不会丢掉旧节点 |
 
 ### 优选 API 支持范围
 

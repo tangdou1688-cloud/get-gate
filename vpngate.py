@@ -21,6 +21,7 @@ import edge
 import logsetup
 import output
 import sources
+import state
 from config import mask_secret
 
 
@@ -49,7 +50,8 @@ def main() -> None:
         raise FatalError(
             f"从 {raw_count} 个原始节点中没有解析出任何 SSTP(TCP) 节点 — 数据格式可能已变化, 需要人工适配"
         )
-    unique_nodes = sources.dedupe(sstp_nodes)
+    history = state.fetch_previous_nodes(cfg.previous_data_url, cfg.http_timeout)
+    unique_nodes = sources.dedupe(list(sstp_nodes) + history)
     if cfg.max_check_nodes > 0:
         unique_nodes = unique_nodes[: cfg.max_check_nodes]
 
@@ -91,7 +93,7 @@ def main() -> None:
     if not success:
         raise FatalError("本次没有任何可用节点 (全部检测失败) — 不生成空结果, 保留上次产物")
 
-    data = output.build_outputs(results, raw_count, sstp_count, source)
+    data = output.build_outputs(results, raw_count, sstp_count, source, len(history))
     logsetup.get("RESULT").info("可用节点: %d", len(success))
     logsetup.get("RESULT").info("国家数量: %d", data["stats"]["countries"])
 

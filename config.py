@@ -54,6 +54,7 @@ class Config:
     secret_key: str = field(default="", repr=False)
     site_url: str = DEFAULT_SITE_URL
     nodes_url: str = ""
+    previous_data_url: str = ""
 
     def validate(self) -> None:
         """校验必须项, 失败抛 ConfigError (对应旧版的 die 条件)."""
@@ -158,6 +159,9 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
     nodes_url = _env_value(env, "NODES_URL") or (
         f"{site_url}/{(secret_key + '/') if secret_key else ''}nodes.txt"
     )
+    previous_data_url = _env_value(env, "PREVIOUS_DATA_URL") or (
+        f"{site_url}/{(secret_key + '/') if secret_key else ''}data.json"
+    )
 
     return Config(
         repo_dir=repo_dir,
@@ -188,6 +192,7 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         secret_key=secret_key,
         site_url=site_url,
         nodes_url=nodes_url,
+        previous_data_url=previous_data_url,
     )
 
 

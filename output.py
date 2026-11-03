@@ -55,7 +55,11 @@ def _node_sort_key(node: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def build_outputs(
-    results: Iterable[dict[str, Any]], raw_count: int, sstp_count: int, source: str
+    results: Iterable[dict[str, Any]],
+    raw_count: int,
+    sstp_count: int,
+    source: str,
+    history_count: int = 0,
 ) -> dict[str, Any]:
     """汇总检测结果, 生成 data.json 内容."""
     results = list(results)
@@ -75,6 +79,7 @@ def build_outputs(
         "residential_est": sum(1 for node in available if node.get("residential") == "residential"),
         "datacenter_est": sum(1 for node in available if node.get("residential") == "datacenter"),
         "unknown_est": sum(1 for node in available if node.get("residential") == "unknown"),
+        "history_nodes": history_count,
     }
 
     by_country: dict[str, dict[str, Any]] = {}
