@@ -114,15 +114,15 @@ EDGE_HOSTS_EXTRA = [
 # ---------------------------------------------------------------------------
 OPTIMAL_API_CT = os.environ.get(
     "OPTIMAL_API_CT",
-    "https://cf.090227.xyz/ct?ips=6&port=443,https://090227.pages.dev/bestcf?isp=ct&ips=20",
+    "https://cf.090227.xyz/ct?ips=50&port=443,https://090227.pages.dev/bestcf?isp=ct&ips=50",
 ).strip()
 OPTIMAL_API_CU = os.environ.get(
     "OPTIMAL_API_CU",
-    "https://cf.090227.xyz/cu?ips=6&port=443,https://090227.pages.dev/bestcf?isp=cu&ips=20",
+    "https://cf.090227.xyz/cu?ips=50&port=443,https://090227.pages.dev/bestcf?isp=cu&ips=50",
 ).strip()
 OPTIMAL_API_CMCC = os.environ.get(
     "OPTIMAL_API_CMCC",
-    "https://cf.090227.xyz/cmcc?ips=8&port=443,https://090227.pages.dev/bestcf?isp=cmcc&ips=20",
+    "https://cf.090227.xyz/cmcc?ips=50&port=443,https://090227.pages.dev/bestcf?isp=cmcc&ips=50",
 ).strip()
 OPTIMAL_API_EXTRA = os.environ.get(
     "OPTIMAL_API_EXTRA",
@@ -130,8 +130,8 @@ OPTIMAL_API_EXTRA = os.environ.get(
         # BestCF 聚合 (含域名 + IP, 更新频繁)
         "https://090227.pages.dev/bestcf?isp=all&ips=50",
         # CMLiussss / 090227 系列
-        "https://addressesapi.090227.xyz/ct?ips=6&port=443",
-        "https://addressesapi.090227.xyz/cmcc?ips=6&port=443",
+        "https://addressesapi.090227.xyz/ct?ips=50&port=443",
+        "https://addressesapi.090227.xyz/cmcc?ips=50&port=443",
         "https://addressesapi.090227.xyz/CloudFlareYes",
         "https://addressesapi.090227.xyz/ip.164746.xyz",
         # IPDB (ymyuuu) BestCF 列表
