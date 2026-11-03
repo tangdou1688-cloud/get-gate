@@ -37,7 +37,7 @@ jobs:
         run: python vpngate.py
         env:
           CHECK_WORKER: ${{ secrets.DOMAIN }}
-          NODES_KEY: ${{ secrets.NODES_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
           CHECK_CONCURRENCY: "32"
           CHECK_TIMEOUT: "90"
 
