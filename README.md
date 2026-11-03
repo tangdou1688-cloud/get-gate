@@ -156,6 +156,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
   - `raw.githubusercontent.com/ymyuuu/IPDB/.../bestcfv4.txt`
   - `ip.164746.xyz/ipTop.html`（CloudflareSpeedTest Top）
 - 默认运行实测：14 个 API 源 → 54 个端点，静态域名 32 个，合并入口池 85 个。
+- `ips=50` 已写入所有默认源；但上游并不都支持该参数：`090227.pages.dev` 固定返回 20 条、`addressesapi` 固定 6 条，`cf.090227.xyz` 由服务端决定条数，所以端点总量仍约 54。想要更多入口，往 `OPTIMAL_API_EXTRA` 追加源即可。
 - 想接入需要 key 的接口（如 `https://www.wetest.vip/api/cf2dns/get_cloudflare_ip?key=xxx&type=v4`）或自建接口：填 `OPTIMAL_API_EXTRA` 即可，JSON 会自动解析。
 
 > 再次强调：`vpngate.py` **不需要**配置 `EDT_UUID` 和 `EDT_DOMAIN`，这两个参数属于 edgetunnel 本身。
