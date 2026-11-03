@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any, Iterable
@@ -85,52 +86,65 @@ def classify_network(host: str, exit_org: str | None, is_datacenter: bool | None
 
 
 def check_one(node: dict[str, Any], session: requests.Session, cfg: Config) -> dict[str, Any]:
-    """调用 Worker 检测单个节点, 始终返回结构完整的字典."""
+    """调用 Worker 检测单个节点, 失败按 CHECK_RETRIES 重试; 始终返回结构完整的字典."""
     url = cfg.worker_check_url + quote(f"{node['host']}:{node['port']}", safe="")
     out: dict[str, Any] = dict(node)
     out.update(RESULT_DEFAULTS)
     out["link"] = f"sstp://vpn:vpn@{node['host']}:{node['port']}"
     out["checked_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    try:
-        resp = session.get(
-            url, timeout=cfg.check_timeout, headers={"User-Agent": "Mozilla/5.0 (gate-checker)"}
-        )
-        if resp.status_code != 200:
-            out["error"] = f"HTTP {resp.status_code}"
-            out["worker_error"] = True
-            return out
-        payload = resp.json()
-        ok = bool(payload.get("success"))
-        out["success"] = ok
-        out["status"] = "success" if ok else "failed"
-        out["latency_ms"] = payload.get("responseTime")
-        out["colo"] = payload.get("colo")
-        out["error"] = None if ok else (payload.get("error") or payload.get("message") or "check failed")
-        exit_info = payload.get("exit") or {}
-        if exit_info:
-            asn = exit_info.get("asn") or {}
-            org = asn.get("org") or asn.get("name") or ""
-            out["exit"] = {
-                "ip": exit_info.get("ip"),
-                "country": exit_info.get("country"),
-                "country_code": exit_info.get("country_code"),
-                "city": exit_info.get("city"),
-                "continent": exit_info.get("continent"),
-                "asn": asn.get("asn"),
-                "org": org,
-                "type": asn.get("type"),
-                "is_datacenter": exit_info.get("is_datacenter"),
-            }
-            out["residential"] = classify_network(
-                out["host"], org, exit_info.get("is_datacenter")
+    attempts = 1 + max(0, cfg.check_retries)
+
+    for attempt in range(attempts):
+        retry = attempt + 1 < attempts
+        try:
+            resp = session.get(
+                url, timeout=cfg.check_timeout, headers={"User-Agent": "Mozilla/5.0 (gate-checker)"}
             )
-        else:
-            out["residential"] = classify_network(out["host"], None, None)
-        return out
-    except Exception as exc:
-        out["error"] = f"{type(exc).__name__}: {exc}"
-        out["worker_error"] = True
-        return out
+            if resp.status_code != 200:
+                out["error"] = f"HTTP {resp.status_code}"
+                out["worker_error"] = True
+                if retry:
+                    time.sleep(1.0)
+                    continue
+                return out
+            payload = resp.json()
+            ok = bool(payload.get("success"))
+            out["success"] = ok
+            out["status"] = "success" if ok else "failed"
+            out["latency_ms"] = payload.get("responseTime")
+            out["colo"] = payload.get("colo")
+            out["error"] = None if ok else (payload.get("error") or payload.get("message") or "check failed")
+            exit_info = payload.get("exit") or {}
+            if exit_info:
+                asn = exit_info.get("asn") or {}
+                org = asn.get("org") or asn.get("name") or ""
+                out["exit"] = {
+                    "ip": exit_info.get("ip"),
+                    "country": exit_info.get("country"),
+                    "country_code": exit_info.get("country_code"),
+                    "city": exit_info.get("city"),
+                    "continent": exit_info.get("continent"),
+                    "asn": asn.get("asn"),
+                    "org": org,
+                    "type": asn.get("type"),
+                    "is_datacenter": exit_info.get("is_datacenter"),
+                }
+                out["residential"] = classify_network(
+                    out["host"], org, exit_info.get("is_datacenter")
+                )
+            else:
+                out["residential"] = classify_network(out["host"], None, None)
+            if ok or not retry:
+                return out
+            time.sleep(1.0)
+        except Exception as exc:
+            out["error"] = f"{type(exc).__name__}: {exc}"
+            out["worker_error"] = True
+            if retry:
+                time.sleep(1.0)
+                continue
+            return out
+    return out
 
 
 def check_all(nodes: list[dict[str, Any]], session: requests.Session, cfg: Config) -> list[dict[str, Any]]:

@@ -105,7 +105,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 3. 点保存
 4. 客户端刷新订阅 → 每次刷新 edgetunnel 都重新拉取一次 nodes.txt，节点自动更新
 
-> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:443#国家-住宅-01$sstp://vpn:vpn@节点:端口`。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每 30 分钟自动换、零手动。
+> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01-2801ms$sstp://vpn:vpn@节点:端口`（名称末尾是该节点的 Worker 握手延迟）。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每 30 分钟自动换、零手动。
 
 ---
 
@@ -154,6 +154,8 @@ optimal_apis.txt 优选 API 默认列表, # section: ct|cu|cmcc|extra 分组
 | `OPTIMAL_API_EXTRA` | `optimal_apis.txt` 的 `extra` 分组 | 追加任意优选 API（逗号/换行分隔） |
 | `OPTIMAL_API` | 空 | 旧版总开关；设置后**完全替代**上面四项（逗号分隔） |
 | `OPTIMAL_API_TIMEOUT` | `15` | 单个优选 API 请求超时（秒） |
+| `EDGE_PORTS` | `443,2053,8443` | 入口端口轮转池；设 `443` 可关闭轮转（仅用 443） |
+| `CHECK_RETRIES` | `1` | 单节点检测失败后的重试次数（0 = 不重试） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
 | `SECRET_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<SECRET_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |
 | `NODES_URL` | 按 `SITE_URL` + `SECRET_KEY` 自动拼接 | 固定订阅地址（fork 后改成你自己的） |

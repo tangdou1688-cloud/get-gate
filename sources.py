@@ -16,7 +16,7 @@ from logsetup import get
 log = get("VPN GATE")
 
 _PROTO_TCP_RE = re.compile(r"^proto\s+(tcp|tcp4|tcp6)\b", re.M)
-_REMOTE_RE = re.compile(r"^remote\s+\S+\s+(\d+)", re.M)
+_REMOTE_RE = re.compile(r"^remote\s+(\S+)\s+(\d+)", re.M)
 
 
 class SourceError(RuntimeError):
@@ -160,24 +160,26 @@ def to_sstp_nodes(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                 config = ""
         if not _PROTO_TCP_RE.search(config):
             continue
-        matched = _REMOTE_RE.search(config)
-        if not matched:
-            continue
-        port = int(matched.group(1))
-        if not (1 <= port <= 65535):
+        ports: list[int] = []
+        for matched in _REMOTE_RE.finditer(config):
+            port = int(matched.group(2))
+            if 1 <= port <= 65535 and port not in ports:
+                ports.append(port)
+        if not ports:
             continue
         host = row["host"]
         if not host.endswith(".opengw.net"):
             host = f"{host}.opengw.net"
-        nodes.append(
-            {
-                "host": host,
-                "port": port,
-                "ip": row["ip"],
-                "country": row["country_long"],
-                "country_code": row["country_short"],
-            }
-        )
+        for port in ports:
+            nodes.append(
+                {
+                    "host": host,
+                    "port": port,
+                    "ip": row["ip"],
+                    "country": row["country_long"],
+                    "country_code": row["country_short"],
+                }
+            )
     return nodes
 
 

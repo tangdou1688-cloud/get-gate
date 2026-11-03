@@ -91,10 +91,25 @@ def build_outputs(
     }
 
 
-def build_nodes_text(data: dict[str, Any], edge_hosts: list[str]) -> str:
-    """生成纯节点行: 每行 = 入口地址#国家-类别-序号$sstp://vpn:vpn@host:port."""
+def _pick_entry(edge_hosts: list[str], ports: list[int], index: int) -> str:
+    """按序号轮转入口与端口 (端口轮转让 443/2053/8443 均匀分布)."""
+    host = edge_hosts[index % len(edge_hosts)]
+    if not ports:
+        return host
+    port = ports[index % len(ports)]
+    base, sep, _ = host.rpartition(":")
+    if not sep:
+        return f"{host}:{port}"
+    return f"{base}:{port}"
+
+
+def build_nodes_text(
+    data: dict[str, Any], edge_hosts: list[str], ports: list[int] | None = None
+) -> str:
+    """生成纯节点行: 每行 = 入口地址#国家-类别-序号-延迟$sstp://vpn:vpn@host:port."""
     if not edge_hosts:
         raise OutputError("优选入口池为空, 无法生成 nodes.txt")
+    ports = ports or [443]
 
     lines: list[str] = []
     index = 0
@@ -109,10 +124,13 @@ def build_nodes_text(data: dict[str, Any], edge_hosts: list[str]) -> str:
         for kind, label in NETWORK_BUCKETS:
             bucket = [node for node in nodes if (node.get("residential") or "unknown") == kind]
             for order, node in enumerate(bucket, 1):
-                entry = edge_hosts[index % len(edge_hosts)]
+                entry = _pick_entry(edge_hosts, ports, index)
                 index += 1
+                latency = node.get("latency_ms")
+                latency_suffix = f"-{int(latency)}ms" if latency is not None else ""
                 lines.append(
-                    f"{entry}#{zh}-{label}-{order:02d}$sstp://vpn:vpn@{node['host']}:{node['port']}"
+                    f"{entry}#{zh}-{label}-{order:02d}{latency_suffix}"
+                    f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
                 )
     return "\n".join(lines) + "\n"
 
@@ -149,6 +167,6 @@ def write_outputs(cfg: Config, data: dict[str, Any], edge_hosts: list[str]) -> t
 
     nodes_path = os.path.join(out_dir, "nodes.txt")
     with open(nodes_path, "w", encoding="utf-8") as handle:
-        handle.write(build_nodes_text(data, edge_hosts))
+        handle.write(build_nodes_text(data, edge_hosts, cfg.edge_ports))
 
     return data_path, html_path, nodes_path

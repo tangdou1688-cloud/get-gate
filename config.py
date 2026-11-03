@@ -39,12 +39,14 @@ class Config:
     concurrency: int
     check_timeout: float
     max_check_nodes: int
+    check_retries: int
 
     optimal_apis: list[str] = field(default_factory=list)
     optimal_api_timeout: float = 15.0
 
     edge_hosts: list[str] = field(default_factory=list)
     edge_hosts_extra: list[str] = field(default_factory=list)
+    edge_ports: list[int] = field(default_factory=lambda: [443])
     hosts_entry: str = ""
 
     secret_key: str = ""
@@ -69,6 +71,21 @@ def split_list(*values: str) -> list[str]:
             if item and item not in items:
                 items.append(item)
     return items
+
+
+def _parse_ports(raw: str) -> list[int]:
+    """解析 EDGE_PORTS (逗号/空白分隔), 非法值忽略; 空则回退 443."""
+    ports: list[int] = []
+    for item in re.split(r"[\s,]+", raw or ""):
+        if not item:
+            continue
+        try:
+            port = int(item)
+        except ValueError:
+            continue
+        if 1 <= port <= 65535 and port not in ports:
+            ports.append(port)
+    return ports or [443]
 
 
 def read_list_file(path: str) -> list[str]:
@@ -157,10 +174,12 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         concurrency=max(1, int(_env_value(env, "CHECK_CONCURRENCY", "32"))),
         check_timeout=float(_env_value(env, "CHECK_TIMEOUT", "90")),
         max_check_nodes=int(_env_value(env, "MAX_CHECK_NODES", "0")),
+        check_retries=max(0, int(_env_value(env, "CHECK_RETRIES", "1"))),
         optimal_apis=optimal_apis,
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,
         edge_hosts_extra=split_list(_env_value(env, "EDGE_HOSTS_EXTRA")),
+        edge_ports=_parse_ports(_env_value(env, "EDGE_PORTS", "443,2053,8443")),
         hosts_entry=_env_value(env, "HOSTS_ENTRY"),
         secret_key=secret_key,
         site_url=site_url,
