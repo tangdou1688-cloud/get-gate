@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import socket
 import ssl
+import statistics
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -88,65 +89,80 @@ def classify_network(host: str, exit_org: str | None, is_datacenter: bool | None
     return "unknown"
 
 
+def _apply_exit(out: dict[str, Any], payload: dict[str, Any]) -> None:
+    """把 Worker 返回的出口信息写入结果字典."""
+    exit_info = payload.get("exit") or {}
+    if not exit_info:
+        out["residential"] = classify_network(out["host"], None, None)
+        return
+    asn = exit_info.get("asn") or {}
+    org = asn.get("org") or asn.get("name") or ""
+    out["exit"] = {
+        "ip": exit_info.get("ip"),
+        "country": exit_info.get("country"),
+        "country_code": exit_info.get("country_code"),
+        "city": exit_info.get("city"),
+        "continent": exit_info.get("continent"),
+        "asn": asn.get("asn"),
+        "org": org,
+        "type": asn.get("type"),
+        "is_datacenter": exit_info.get("is_datacenter"),
+    }
+    out["residential"] = classify_network(out["host"], org, exit_info.get("is_datacenter"))
+
+
 def check_one(node: dict[str, Any], session: requests.Session, cfg: Config) -> dict[str, Any]:
-    """调用 Worker 检测单个节点, 失败按 CHECK_RETRIES 重试; 始终返回结构完整的字典."""
+    """调用 Worker 检测单个节点.
+
+    成功时按 CHECK_SAMPLES 采样多次, 取中位数作为延迟 (单次测量抖动大);
+    失败按 CHECK_RETRIES 重试. 始终返回结构完整的字典.
+    """
     url = cfg.worker_check_url + quote(f"{node['host']}:{node['port']}", safe="")
     out: dict[str, Any] = dict(node)
     out.update(RESULT_DEFAULTS)
     out["link"] = f"sstp://vpn:vpn@{node['host']}:{node['port']}"
     out["checked_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    attempts = 1 + max(0, cfg.check_retries)
 
-    for attempt in range(attempts):
-        retry = attempt + 1 < attempts
+    samples: list[float] = []
+    failures = 0
+    max_rounds = max(cfg.check_samples, 1 + max(0, cfg.check_retries))
+    for _ in range(max_rounds):
         try:
             resp = session.get(
                 url, timeout=cfg.check_timeout, headers={"User-Agent": "Mozilla/5.0 (gate-checker)"}
             )
             if resp.status_code != 200:
-                out["error"] = f"HTTP {resp.status_code}"
+                failures += 1
                 out["worker_error"] = True
-                if retry:
-                    time.sleep(1.0)
-                    continue
-                return out
-            payload = resp.json()
-            ok = bool(payload.get("success"))
-            out["success"] = ok
-            out["status"] = "success" if ok else "failed"
-            out["latency_ms"] = payload.get("responseTime")
-            out["colo"] = payload.get("colo")
-            out["error"] = None if ok else (payload.get("error") or payload.get("message") or "check failed")
-            exit_info = payload.get("exit") or {}
-            if exit_info:
-                asn = exit_info.get("asn") or {}
-                org = asn.get("org") or asn.get("name") or ""
-                out["exit"] = {
-                    "ip": exit_info.get("ip"),
-                    "country": exit_info.get("country"),
-                    "country_code": exit_info.get("country_code"),
-                    "city": exit_info.get("city"),
-                    "continent": exit_info.get("continent"),
-                    "asn": asn.get("asn"),
-                    "org": org,
-                    "type": asn.get("type"),
-                    "is_datacenter": exit_info.get("is_datacenter"),
-                }
-                out["residential"] = classify_network(
-                    out["host"], org, exit_info.get("is_datacenter")
-                )
+                out["error"] = f"HTTP {resp.status_code}"
             else:
-                out["residential"] = classify_network(out["host"], None, None)
-            if ok or not retry:
-                return out
-            time.sleep(1.0)
+                payload = resp.json()
+                out["colo"] = payload.get("colo")
+                _apply_exit(out, payload)
+                if payload.get("success"):
+                    samples.append(float(payload.get("responseTime") or 0.0))
+                    out["error"] = None
+                    if len(samples) >= cfg.check_samples:
+                        break
+                else:
+                    failures += 1
+                    out["error"] = payload.get("error") or payload.get("message") or "check failed"
         except Exception as exc:
-            out["error"] = f"{type(exc).__name__}: {exc}"
+            failures += 1
             out["worker_error"] = True
-            if retry:
-                time.sleep(1.0)
-                continue
-            return out
+            out["error"] = f"{type(exc).__name__}: {exc}"
+        if failures > cfg.check_retries:
+            break
+        time.sleep(0.5)
+
+    if samples:
+        out["success"] = True
+        out["status"] = "success"
+        out["latency_ms"] = round(statistics.median(samples))
+        out["latency_samples"] = [round(value) for value in samples]
+    else:
+        out["success"] = False
+        out["status"] = "failed"
     return out
 
 

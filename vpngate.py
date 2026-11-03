@@ -75,6 +75,18 @@ def main() -> None:
         edge_executor.shutdown(wait=True)
     elapsed = time.time() - started
 
+    sampled = [item for item in results if len(item.get("latency_samples") or []) > 1][:10]
+    for item in sampled:
+        values = item["latency_samples"]
+        worker_log.info(
+            "采样对比 %s:%s -> %s ms (中位 %s, 极差 %s)",
+            item["host"],
+            item["port"],
+            values,
+            item["latency_ms"],
+            max(values) - min(values),
+        )
+
     rescued = checker.rescue_with_sstp_probe(results, cfg)
     success = [item for item in results if item.get("success")]
     failed = [item for item in results if not item.get("success")]

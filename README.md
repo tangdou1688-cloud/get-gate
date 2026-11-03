@@ -159,6 +159,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 | `OPTIMAL_API_TIMEOUT` | `15` | 单个优选 API 请求超时（秒） |
 | `EDGE_PORTS` | `443` | 入口端口池；默认只用 443。想试备用端口可设 `443,2053,8443`（部分网络会封这些端口，导致节点全超时） |
 | `CHECK_RETRIES` | `1` | 单节点检测失败后的重试次数（0 = 不重试） |
+| `CHECK_SAMPLES` | `3` | 成功节点重复采样次数，取中位数作为延迟（1 = 单次，抖动大） |
 | `SSTP_PROBE` | `1` | Worker 判失败后再做一次 SSTP 握手兜底，通过即保留（宁可多推不可错杀）；`0` 关闭 |
 | `SSTP_PROBE_TIMEOUT` | `8` | 兜底 SSTP 握手超时（秒） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
