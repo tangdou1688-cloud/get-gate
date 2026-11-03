@@ -96,7 +96,7 @@ function rowHtml(n) {
     '<td class="hide-m">' + (n.country_code || "") + '</td>' +
     '<td>SSTP</td>' +
     '<td class="lat">' + (n.latency_ms != null ? n.latency_ms + ' ms' : '-') + '</td>' +
-    '<td class="lat">' + (n.purity && n.purity.purity != null ? n.purity.purity + '%' : '-') + '</td>' +
+    '<td class="lat">' + (n.purity && n.purity.purity != null ? Math.round(Number(n.purity.purity)) + '%' : '-') + '</td>' +
     '<td class="hide-m" style="color:var(--muted)">' + exit + '</td>' +
     '<td>' + badge + '</td>' +
     '<td class="hide-m" style="color:var(--muted)">' + date + '</td>' +

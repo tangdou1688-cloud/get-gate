@@ -80,10 +80,10 @@ def build_outputs(
         "datacenter_est": sum(1 for node in available if node.get("residential") == "datacenter"),
         "unknown_est": sum(1 for node in available if node.get("residential") == "unknown"),
         "history_nodes": history_count,
-        "purity_avg": round(
+        "purity_avg": int(round(
             sum(item["purity"]["purity"] for item in available if item.get("purity")) /
             max(1, sum(1 for item in available if item.get("purity")))
-        ),
+        )),
     }
 
     by_country: dict[str, dict[str, Any]] = {}
@@ -140,7 +140,9 @@ def build_nodes_text(
                 entry = _pick_entry(edge_hosts, ports, index)
                 index += 1
                 purity = (node.get("purity") or {}).get("purity")
-                purity_suffix = f"-{int(purity)}%" if isinstance(purity, (int, float)) else ""
+                purity_suffix = (
+                    f"-{int(round(float(purity)))}%" if isinstance(purity, (int, float)) else ""
+                )
                 lines.append(
                     f"{entry}#{zh}-{label}-{order:02d}{purity_suffix}"
                     f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
