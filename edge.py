@@ -6,6 +6,7 @@ import ipaddress
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -25,6 +26,12 @@ _JSON_KEYS = ("ip", "host", "address", "server", "hostname", "ip_address")
 
 class EdgePoolError(RuntimeError):
     """入口池为空, 无法生成节点."""
+
+
+def safe_url(url: str) -> str:
+    """日志用地址: 去掉 query/fragment, 避免 key=... 进公开日志."""
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
 
 
 def _is_public_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
@@ -148,7 +155,7 @@ def _make_session(size: int) -> requests.Session:
 def _fetch_one(url: str, timeout: float, session: requests.Session) -> list[str]:
     resp = session.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
     if resp.status_code != 200:
-        log.info("API 返回状态码异常 (%s): %s", resp.status_code, url)
+        log.info("API 返回状态码异常 (%s): %s", resp.status_code, safe_url(url))
         return []
     return parse_optimal_payload(resp.text)
 
@@ -164,14 +171,14 @@ def fetch_optimal_api_endpoints(apis: list[str], timeout: float) -> list[str]:
     with ThreadPoolExecutor(max_workers=max(1, min(8, len(urls)))) as pool:
         futures = {}
         for index, url in enumerate(urls):
-            log.info("请求优选 API: %s", url)
+            log.info("请求优选 API: %s", safe_url(url))
             futures[pool.submit(_fetch_one, url, timeout, session)] = (index, url)
         for future in as_completed(futures):
             index, url = futures[future]
             try:
                 results[index] = future.result()
             except Exception as exc:
-                log.info("拉取优选 API 失败 (%s): %s: %s", url, type(exc).__name__, exc)
+                log.info("拉取优选 API 失败 (%s): %s: %s", safe_url(url), type(exc).__name__, exc)
     session.close()
 
     endpoints: list[str] = []

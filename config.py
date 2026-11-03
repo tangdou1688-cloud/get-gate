@@ -35,7 +35,7 @@ class Config:
     vpngate_mirror: str
     http_timeout: int
 
-    worker_check_url: str
+    worker_check_url: str = field(repr=False)
     concurrency: int
     check_timeout: float
     max_check_nodes: int
@@ -49,7 +49,7 @@ class Config:
     edge_ports: list[int] = field(default_factory=lambda: [443])
     hosts_entry: str = ""
 
-    secret_key: str = ""
+    secret_key: str = field(default="", repr=False)
     site_url: str = DEFAULT_SITE_URL
     nodes_url: str = ""
 

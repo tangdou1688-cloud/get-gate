@@ -17,6 +17,14 @@ log = get("VPN GATE")
 
 _PROTO_TCP_RE = re.compile(r"^proto\s+(tcp|tcp4|tcp6)\b", re.M)
 _REMOTE_RE = re.compile(r"^remote\s+(\S+)\s+(\d+)", re.M)
+_HOST_RE = re.compile(r"^[a-z0-9.-]+\.opengw\.net$")
+_COUNTRY_CODE_RE = re.compile(r"^[A-Z]{2}$")
+_UNSAFE_TEXT_RE = re.compile(r"[#$\r\n\x00-\x1f\x7f]")
+
+
+def _sanitize_text(value: object, limit: int = 64) -> str:
+    """清洗第三方文本字段, 防止换行/#/$ 注入订阅行."""
+    return _UNSAFE_TEXT_RE.sub(" ", str(value or "")).strip()[:limit]
 
 
 class SourceError(RuntimeError):
@@ -167,17 +175,23 @@ def to_sstp_nodes(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
                 ports.append(port)
         if not ports:
             continue
-        host = row["host"]
+        host = str(row["host"]).strip().lower()
         if not host.endswith(".opengw.net"):
             host = f"{host}.opengw.net"
+        if not _HOST_RE.fullmatch(host):
+            continue
+        country_code = str(row["country_short"]).strip().upper()
+        if not _COUNTRY_CODE_RE.fullmatch(country_code):
+            continue
+        country = _sanitize_text(row["country_long"]) or country_code
         for port in ports:
             nodes.append(
                 {
                     "host": host,
                     "port": port,
                     "ip": row["ip"],
-                    "country": row["country_long"],
-                    "country_code": row["country_short"],
+                    "country": country,
+                    "country_code": country_code,
                 }
             )
     return nodes

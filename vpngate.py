@@ -85,8 +85,8 @@ def main() -> None:
     )
     worker_log.info("耗时: %.1fs", elapsed)
 
-    if unique_nodes and not success and len(worker_errors) == len(unique_nodes):
-        raise FatalError("Worker 全部请求异常, 检测服务不可用 — 本次运行判定失败 (不生成空结果)")
+    if not success:
+        raise FatalError("本次没有任何可用节点 (全部检测失败) — 不生成空结果, 保留上次产物")
 
     data = output.build_outputs(results, raw_count, sstp_count, source)
     logsetup.get("RESULT").info("可用节点: %d", len(success))

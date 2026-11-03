@@ -73,7 +73,7 @@ edgetunnel 后台「自定义优选IP」框填 https://…/nodes.txt
 | 文件 | 位置 | 改成什么 | 为什么 |
 | :--- | :--- | :--- | :--- |
 | GitHub Actions Secret | `DOMAIN` | 你的检测 Worker 域名，形如 `https://xxx.workers.dev/check?sstp=vpn:vpn@` | 检测统一走你自己的 Worker；**只放 Secret，不要提交进仓库** |
-| vpngate.py | `NODES_URL` | 把里面写死的固定地址换成 `你的用户名/仓库名` | 自动更新时用到的固定地址 |
+| vpngate.py | 无需改代码 | 站点地址由环境变量 `SITE_URL` 控制（默认 `https://<你的用户名>.github.io/get-gate`），fork 后设置 `SITE_URL` 或改 `config.py` 的 `DEFAULT_SITE_URL` | 自动更新时用到的固定地址 |
 
 > **注意**：`vpngate.py` 中**不需要**配置 `EDT_UUID` 和 `EDT_DOMAIN`。你之前看到的这两个变量是旧版遗留，现已删除。edgetunnel 后台会自己处理 UUID 和域名。
 
