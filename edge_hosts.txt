@@ -1,0 +1,38 @@
+# 静态优选域名池 (一行一个, 格式 host:port; # 开头为注释)
+# 环境变量 EDGE_HOSTS 会整体覆盖本文件, EDGE_HOSTS_EXTRA 在末尾追加
+
+# 大厂 Cloudflare 站点 (借用其任播入口)
+saas.sin.fan:443
+cdn.204910.best:443
+www.mfyx.cn:443
+p.etime.vip:443
+cdn.ctn32.us.kg:443
+cf.877774.xyz:443
+spring.io:443
+cf.nyanya.moe:443
+www.sloomb.com:443
+op.chinwa.eu.cc:443
+www.leics.police.uk:443
+securecircle.com:443
+www.shopify.com:443
+www.carousell.sg:443
+www.dbs.com.sg:443
+openai.com:443
+linear.app:443
+www.bilibili.com:443
+uspto.gov:443
+www.vmware.com:443
+
+# 社区维护的 CF 优选域名
+cf.090227.xyz:443
+cf.0sm.com:443
+cfip.1323123.xyz:443
+cnamefuckxxs.yuchen.icu:443
+cloudflare-ip.mofashi.ltd:443
+cdn.tzpro.xyz:443
+cf.877771.xyz:443
+cf.cloudflare.182682.xyz:443
+bestcf.fxxk.dedyn.io:443
+bestcf.pages.dev:443
+090227.pages.dev:443
+bestcf.eu.cc:443

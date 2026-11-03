@@ -1,0 +1,25 @@
+# 优选 API 默认列表 (一行一个; # 开头为注释)
+# section: ct|cu|cmcc|extra 用于分线路覆盖, 环境变量 OPTIMAL_API_CT/CU/CMCC/EXTRA
+# 可分别替换对应分组; 旧版 OPTIMAL_API 设置后完全替代本文件
+
+# section: ct
+https://cf.090227.xyz/ct?ips=50&port=443
+https://090227.pages.dev/bestcf?isp=ct&ips=50
+
+# section: cu
+https://cf.090227.xyz/cu?ips=50&port=443
+https://090227.pages.dev/bestcf?isp=cu&ips=50
+
+# section: cmcc
+https://cf.090227.xyz/cmcc?ips=50&port=443
+https://090227.pages.dev/bestcf?isp=cmcc&ips=50
+
+# section: extra
+https://090227.pages.dev/bestcf?isp=all&ips=50
+https://addressesapi.090227.xyz/ct?ips=50&port=443
+https://addressesapi.090227.xyz/cmcc?ips=50&port=443
+https://addressesapi.090227.xyz/CloudFlareYes
+https://addressesapi.090227.xyz/ip.164746.xyz
+https://ipdb.api.030101.xyz/?type=bestcf&country=false
+https://raw.githubusercontent.com/ymyuuu/IPDB/main/BestCF/bestcfv4.txt
+https://ip.164746.xyz/ipTop.html

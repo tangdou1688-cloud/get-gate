@@ -114,12 +114,11 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 入口地址用的是「优选域名」，决定客户端连 Cloudflare 用哪个 IP、稳不稳。
 
 ### 在哪个文件改
-- 文件：vpngate.py
-- 位置：`EDGE_HOSTS = [ ... ]`
+- 文件：`edge_hosts.txt`（一行一个，格式 `域名:端口`，# 开头为注释）
 
 ### 改法
 1. 用测速工具（如 bestcf）测一批 Cloudflare 优选域名，挑「延迟低 + 实际能连通」的
-2. 打开 vpngate.py，把 `EDGE_HOSTS` 里的域名列表换成你测出来的（逗号分隔，格式 `域名:443`）
+2. 打开 `edge_hosts.txt`，替换/追加你测出来的域名
 3. 提交推送，等下一次自动运行或手动触发 Action
 
 > 不想动代码：设置 GitHub Actions 变量 `EDGE_HOSTS`（整体替换，逗号分隔）或 `EDGE_HOSTS_EXTRA`（在默认池后追加）。默认池已内置 32 个静态优选域名（含 BestCF 聚合站）。
@@ -128,15 +127,31 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 
 ## 四、配置速查表（环境变量 / 常量）
 
+### 项目结构
+
+~~~text
+vpngate.py       入口: 只做流程编排
+config.py        环境变量 + 数据文件 -> Config dataclass (import 时无副作用)
+sources.py       VPN Gate 抓取/解析/筛选 SSTP/去重
+edge.py          静态优选域名 + 优选 API (并发拉取、校验、去重)
+checker.py       Worker 检测、连接池、网络类型判定
+output.py        data.json / index.html / nodes.txt 生成
+logsetup.py      标准 logging 分区输出
+edge_hosts.txt   静态优选域名, 一行一个
+optimal_apis.txt 优选 API 默认列表, # section: ct|cu|cmcc|extra 分组
+~~~
+
+> `HOSTS_ENTRY` 是旧版遗留变量：设置后用它的值整体替代 `edge_hosts.txt` 的静态域名（`EDGE_HOSTS_EXTRA` 仍会追加）。新部署建议直接改 `edge_hosts.txt`。
+
 | 变量 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| `EDGE_HOSTS` | 32 个静态优选域名 | 整体替换静态域名池（逗号分隔，`域名:端口`） |
+| `EDGE_HOSTS` | `edge_hosts.txt`（32 个） | 整体替换静态域名池（逗号分隔，`域名:端口`） |
 | `EDGE_HOSTS_EXTRA` | 空 | 在默认池后追加自定义域名，不覆盖默认值 |
-| `HOSTS_ENTRY` | 空 | 旧版入口覆盖（设置后替代 `EDGE_HOSTS`） |
-| `OPTIMAL_API_CT` | `cf.090227.xyz/ct` + `090227.pages.dev?isp=ct` | 电信线路优选 API（可填多个，逗号分隔；置空即关闭该线路） |
-| `OPTIMAL_API_CU` | `cf.090227.xyz/cu` + `090227.pages.dev?isp=cu` | 联通线路优选 API |
-| `OPTIMAL_API_CMCC` | `cf.090227.xyz/cmcc` + `090227.pages.dev?isp=cmcc` | 移动线路优选 API |
-| `OPTIMAL_API_EXTRA` | 8 个聚合源 | 追加任意优选 API（逗号/换行分隔） |
+| `HOSTS_ENTRY` | 空 | 旧版入口覆盖（设置后替代 `edge_hosts.txt` 的静态域名） |
+| `OPTIMAL_API_CT` | `optimal_apis.txt` 的 `ct` 分组 | 电信线路优选 API（可填多个，逗号分隔；置空即关闭该线路） |
+| `OPTIMAL_API_CU` | `optimal_apis.txt` 的 `cu` 分组 | 联通线路优选 API |
+| `OPTIMAL_API_CMCC` | `optimal_apis.txt` 的 `cmcc` 分组 | 移动线路优选 API |
+| `OPTIMAL_API_EXTRA` | `optimal_apis.txt` 的 `extra` 分组 | 追加任意优选 API（逗号/换行分隔） |
 | `OPTIMAL_API` | 空 | 旧版总开关；设置后**完全替代**上面四项（逗号分隔） |
 | `OPTIMAL_API_TIMEOUT` | `15` | 单个优选 API 请求超时（秒） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
