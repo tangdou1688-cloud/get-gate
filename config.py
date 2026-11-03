@@ -184,7 +184,7 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         check_retries=max(0, int(_env_value(env, "CHECK_RETRIES", "1"))),
         sstp_probe=_env_value(env, "SSTP_PROBE", "1").lower() not in ("0", "false", "no", "off"),
         sstp_probe_timeout=float(_env_value(env, "SSTP_PROBE_TIMEOUT", "8")),
-        check_samples=min(5, max(1, int(_env_value(env, "CHECK_SAMPLES", "3")))),
+        check_samples=min(5, max(1, int(_env_value(env, "CHECK_SAMPLES", "1")))),
         optimal_apis=optimal_apis,
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,
