@@ -136,7 +136,13 @@ def build_nodes_text(
                 entry = _pick_entry(edge_hosts, ports, index)
                 index += 1
                 latency = node.get("latency_ms")
-                latency_suffix = f"-{int(latency)}ms" if latency is not None else ""
+                if latency is None:
+                    latency_suffix = ""
+                elif node.get("verified_by") == "sstp_probe":
+                    # ~ 表示只有 SSTP 握手耗时, 未做数据链路验证, 与 Worker 全链耗时不可直接比较
+                    latency_suffix = f"~{int(latency)}ms"
+                else:
+                    latency_suffix = f"-{int(latency)}ms"
                 lines.append(
                     f"{entry}#{zh}-{label}-{order:02d}{latency_suffix}"
                     f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
