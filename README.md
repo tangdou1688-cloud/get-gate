@@ -1,8 +1,8 @@
 # VPNGate SSTP 家宽节点（edgetunnel 链式代理） 🚀
 
-自动抓取 [VPN Gate](https://www.vpngate.net/) 的 SSTP 家宽/机房节点，调用检测 Worker 逐个验证可用性，按国家分组、标注住宅/机房，生成可直接通过 **URL 自动轮换** 的节点清单。**每 30 分钟自动更新一次。**
+自动抓取 [VPN Gate](https://www.vpngate.net/) 的 SSTP 家宽/机房节点，调用检测 Worker 逐个验证可用性，按国家分组、标注住宅/机房，生成可直接通过 **URL 自动轮换** 的节点清单。**每小时自动更新一次。**
 
-> 核心价值：VPN Gate 的 SSTP 节点 30 分钟就换一批，手动测试筛选太痛苦。本仓库把它全自动了——你只需把 `nodes.txt` 的网址填进 edgetunnel 后台一次，之后节点每 30 分钟自动换，零手动。
+> 核心价值：VPN Gate 的 SSTP 节点 30 分钟就换一批，手动测试筛选太痛苦。本仓库把它全自动了——你只需把 `nodes.txt` 的网址填进 edgetunnel 后台一次，之后节点每小时自动换，零手动。
 
 ---
 
@@ -10,7 +10,7 @@
 
 ~~~text
 VPN Gate 官方源
-      │  (每 30 分钟，GitHub Actions 定时抓取)
+      │  (每小时，GitHub Actions 定时抓取)
       ▼
 筛选 SSTP 节点 → 去重
       │
@@ -28,7 +28,7 @@ VPN Gate 官方源
 edgetunnel 后台「自定义优选IP」框填 https://…/nodes.txt
       │  edgetunnel 每次生成订阅时自动 fetch → 解析 $sstp:// → 套链式代理
       ▼
-客户端订阅 edgetunnel 订阅 → 使用 SSTP 家宽节点 (每 30 分钟自动换)
+客户端订阅 edgetunnel 订阅 → 使用 SSTP 家宽节点 (每小时自动换)
 ~~~
 
 ---
@@ -105,7 +105,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 3. 点保存
 4. 客户端刷新订阅 → 每次刷新 edgetunnel 都重新拉取一次 nodes.txt，节点自动更新
 
-> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01-2801ms$sstp://vpn:vpn@节点:端口`（名称末尾是该节点的 Worker 握手延迟）。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每 30 分钟自动换、零手动。
+> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01-2801ms$sstp://vpn:vpn@节点:端口`（名称末尾是该节点的 Worker 握手延迟）。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每小时自动换、零手动。
 
 ---
 
@@ -191,7 +191,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 ### 全部 -1
 检查：edgetunnel 是否部署好、域名是否解析到 Cloudflare、UUID 是否填对、传输协议是否对得上。
 
-### 30 分钟没更新
+### 1 小时没更新
 到 Actions 页看最近一次运行是否成功、cron 是否还在。
 
 ### 检测 Worker 报错
@@ -202,7 +202,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 
 ---
 
-*流水线：GitHub Actions（每 30 分钟 cron） → vpngate.py → 检测 Worker → GitHub Pages*
+*流水线：GitHub Actions（每小时 cron） → vpngate.py → 检测 Worker → GitHub Pages*
 
 ---
 
