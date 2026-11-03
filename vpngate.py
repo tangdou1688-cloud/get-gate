@@ -73,11 +73,14 @@ def main() -> None:
         edge_executor.shutdown(wait=True)
     elapsed = time.time() - started
 
+    rescued = checker.rescue_with_sstp_probe(results, cfg)
     success = [item for item in results if item.get("success")]
     failed = [item for item in results if not item.get("success")]
     worker_errors = [item for item in failed if item.get("worker_error")]
 
     worker_log.info("检测成功: %d", len(success))
+    if rescued:
+        worker_log.info("SSTP 兜底探测: 挽回 %d 个被 Worker 判失败的节点", rescued)
     worker_log.info(
         "检测失败: %d%s",
         len(failed),

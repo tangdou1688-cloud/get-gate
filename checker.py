@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import socket
+import ssl
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -41,6 +43,7 @@ RESULT_DEFAULTS: dict[str, Any] = {
     "residential": "unknown",
     "error": None,
     "worker_error": False,
+    "verified_by": "worker",
 }
 
 
@@ -145,6 +148,67 @@ def check_one(node: dict[str, Any], session: requests.Session, cfg: Config) -> d
                 continue
             return out
     return out
+
+
+SSTP_PROBE_PATH = "/sra_{BA195980-CD49-458b-9E23-C84EE0ADCD75}/"
+
+
+def probe_sstp(host: str, port: int, timeout: float) -> tuple[float, bytes]:
+    """直接对节点做 TLS + SSTP_DUPLEX_POST 握手, 返回 (耗时毫秒, 应答前 64 字节)."""
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    context.set_ciphers("DEFAULT:@SECLEVEL=0")
+    started = time.time()
+    with socket.create_connection((host, int(port)), timeout=timeout) as raw:
+        with context.wrap_socket(raw, server_hostname=host) as tls:
+            request = (
+                f"SSTP_DUPLEX_POST {SSTP_PROBE_PATH} HTTP/1.1\r\n"
+                f"Host: {host}\r\n"
+                "Content-Length: 18446744073709551615\r\n\r\n"
+            )
+            tls.sendall(request.encode())
+            return (time.time() - started) * 1000, tls.recv(64)
+
+
+def rescue_with_sstp_probe(results: list[dict[str, Any]], cfg: Config) -> int:
+    """对 Worker 判失败的节点补一次 SSTP 握手验证.
+
+    原则: 宁可多推不可错杀 —— Worker 的严格判定 (iplocate.io + 12s 门槛) 会误杀
+    真实可用的节点, 这里用更宽松的 SSTP 握手作为兜底, 通过即保留.
+    """
+    if not cfg.sstp_probe:
+        return 0
+    failed = [item for item in results if not item.get("success")]
+    if not failed:
+        return 0
+
+    def _try(item: dict[str, Any]) -> float | None:
+        try:
+            elapsed_ms, response = probe_sstp(item["host"], item["port"], cfg.sstp_probe_timeout)
+        except Exception:
+            return None
+        if b"HTTP/" in response and b" 200" in response:
+            return elapsed_ms
+        return None
+
+    rescued = 0
+    with ThreadPoolExecutor(max_workers=cfg.concurrency) as pool:
+        futures = {pool.submit(_try, item): item for item in failed}
+        for future in as_completed(futures):
+            item = futures[future]
+            elapsed_ms = future.result()
+            if elapsed_ms is None:
+                continue
+            item["success"] = True
+            item["status"] = "success"
+            item["latency_ms"] = round(elapsed_ms)
+            item["error"] = None
+            item["verified_by"] = "sstp_probe"
+            if item.get("residential") in (None, "unknown"):
+                item["residential"] = classify_network(item["host"], None)
+            rescued += 1
+    return rescued
 
 
 def check_all(nodes: list[dict[str, Any]], session: requests.Session, cfg: Config) -> list[dict[str, Any]]:

@@ -40,6 +40,8 @@ class Config:
     check_timeout: float
     max_check_nodes: int
     check_retries: int
+    sstp_probe: bool
+    sstp_probe_timeout: float
 
     optimal_apis: list[str] = field(default_factory=list)
     optimal_api_timeout: float = 15.0
@@ -175,6 +177,8 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         check_timeout=float(_env_value(env, "CHECK_TIMEOUT", "90")),
         max_check_nodes=int(_env_value(env, "MAX_CHECK_NODES", "0")),
         check_retries=max(0, int(_env_value(env, "CHECK_RETRIES", "1"))),
+        sstp_probe=_env_value(env, "SSTP_PROBE", "1").lower() not in ("0", "false", "no", "off"),
+        sstp_probe_timeout=float(_env_value(env, "SSTP_PROBE_TIMEOUT", "8")),
         optimal_apis=optimal_apis,
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,
