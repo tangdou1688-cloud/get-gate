@@ -157,7 +157,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 | `OPTIMAL_API_EXTRA` | `optimal_apis.txt` 的 `extra` 分组 | 追加任意优选 API（逗号/换行分隔） |
 | `OPTIMAL_API` | 空 | 旧版总开关；设置后**完全替代**上面四项（逗号分隔） |
 | `OPTIMAL_API_TIMEOUT` | `15` | 单个优选 API 请求超时（秒） |
-| `EDGE_PORTS` | `443,2053,8443` | 入口端口轮转池；设 `443` 可关闭轮转（仅用 443） |
+| `EDGE_PORTS` | `443` | 入口端口池；默认只用 443。想试备用端口可设 `443,2053,8443`（部分网络会封这些端口，导致节点全超时） |
 | `CHECK_RETRIES` | `1` | 单节点检测失败后的重试次数（0 = 不重试） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
 | `SECRET_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<SECRET_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |

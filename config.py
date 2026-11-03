@@ -179,7 +179,7 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,
         edge_hosts_extra=split_list(_env_value(env, "EDGE_HOSTS_EXTRA")),
-        edge_ports=_parse_ports(_env_value(env, "EDGE_PORTS", "443,2053,8443")),
+        edge_ports=_parse_ports(_env_value(env, "EDGE_PORTS", "443")),
         hosts_entry=_env_value(env, "HOSTS_ENTRY"),
         secret_key=secret_key,
         site_url=site_url,
