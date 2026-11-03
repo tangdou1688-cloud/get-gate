@@ -99,8 +99,9 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 1. 进 edgetunnel 后台（你的域名/admin），找到「自定义优选IP」文本框
 2. 粘贴**一行网址**：
    ~~~text
-   https://你的GitHub用户名.github.io/仓库名/nodes.txt
+   https://你的GitHub用户名.github.io/仓库名/<NODES_KEY>/nodes.txt
    ~~~
+   > `NODES_KEY` 是你在 Actions Secret 里设置的随机密钥。设置后所有产物只发布在 `/<NODES_KEY>/` 下，根路径 `nodes.txt` 不再生成；不设置则退回根路径 `nodes.txt`（公开可读）。
 3. 点保存
 4. 客户端刷新订阅 → 每次刷新 edgetunnel 都重新拉取一次 nodes.txt，节点自动更新
 
@@ -139,7 +140,8 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 | `OPTIMAL_API` | 空 | 旧版总开关；设置后**完全替代**上面四项（逗号分隔） |
 | `OPTIMAL_API_TIMEOUT` | `15` | 单个优选 API 请求超时（秒） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量或 Actions Secret `CHECK_WORKER` 里，不要写进代码/仓库** |
-| `NODES_URL` | `https://tangdou1688-cloud.github.io/get-gate/nodes.txt` | 固定站点地址（fork 后改成你自己的） |
+| `NODES_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<NODES_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |
+| `NODES_URL` | 按 `SITE_URL` + `NODES_KEY` 自动拼接 | 固定订阅地址（fork 后改成你自己的） |
 
 ### 优选 API 支持范围
 

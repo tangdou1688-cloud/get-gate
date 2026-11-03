@@ -162,7 +162,14 @@ OPTIMAL_APIS = (
     else split_api_list(OPTIMAL_API_CT, OPTIMAL_API_CU, OPTIMAL_API_CMCC, OPTIMAL_API_EXTRA)
 )
 
-NODES_URL = os.environ.get("NODES_URL", "https://tangdou1688-cloud.github.io/get-gate/nodes.txt")
+# 节点文本访问密钥: 非空时所有产物发布到 /<NODES_KEY>/ 下, 根路径不再生成 nodes.txt
+# 只能通过环境变量 / GitHub Actions Secret 注入, 不要写进仓库
+NODES_KEY = os.environ.get("NODES_KEY", "").strip()
+NODES_KEY_RE = re.compile(r"^[A-Za-z0-9_-]{16,64}$")
+SITE_URL = os.environ.get("SITE_URL", "https://tangdou1688-cloud.github.io/get-gate").rstrip("/")
+NODES_URL = os.environ.get("NODES_URL") or (
+    f"{SITE_URL}/{(NODES_KEY + '/') if NODES_KEY else ''}nodes.txt"
+)
 
 # ---------------------------------------------------------------------------
 # 日志
@@ -610,12 +617,13 @@ def build_nodes_text(data, edge_hosts):
     return "\n".join(lines) + "\n"
 
 def write_outputs(data, edge_hosts):
-    os.makedirs(PUBLIC_DIR, exist_ok=True)
-    data_path = os.path.join(PUBLIC_DIR, "data.json")
+    out_dir = os.path.join(PUBLIC_DIR, NODES_KEY) if NODES_KEY else PUBLIC_DIR
+    os.makedirs(out_dir, exist_ok=True)
+    data_path = os.path.join(out_dir, "data.json")
     with open(data_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
 
-    html_path = os.path.join(PUBLIC_DIR, "index.html")
+    html_path = os.path.join(out_dir, "index.html")
     if os.path.exists(TEMPLATE_HTML):
         with open(TEMPLATE_HTML, "r", encoding="utf-8") as f:
             html = f.read()
@@ -628,7 +636,7 @@ def write_outputs(data, edge_hosts):
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    nodes_path = os.path.join(PUBLIC_DIR, "nodes.txt")
+    nodes_path = os.path.join(out_dir, "nodes.txt")
     with open(nodes_path, "w", encoding="utf-8") as f:
         f.write(build_nodes_text(data, edge_hosts))
 
@@ -640,6 +648,8 @@ def write_outputs(data, edge_hosts):
 def main():
     if not WORKER_CHECK_URL:
         die("未配置检测 Worker: 请设置环境变量 CHECK_WORKER (本地) 或 GitHub Actions Secret CHECK_WORKER")
+    if NODES_KEY and not NODES_KEY_RE.fullmatch(NODES_KEY):
+        die("NODES_KEY 非法: 仅允许 A-Z a-z 0-9 _ -, 长度 16-64")
     session = requests.Session()
     rows, source = fetch_vpngate()
     raw_count = len(rows)
@@ -686,7 +696,8 @@ def main():
     log("WEBSITE", f"生成 {os.path.relpath(data_path, REPO_DIR)}")
     log("WEBSITE", f"生成 {os.path.relpath(html_path, REPO_DIR)}")
     log("WEBSITE", f"生成 {os.path.relpath(nodes_path, REPO_DIR)}")
-    log("USAGE", f"自动轮换: 把 {NODES_URL} 填入 edgetunnel 后台「自定义优选IP」框 (一次配置, 之后自动更新)")
+    display_url = NODES_URL.replace(NODES_KEY, "****") if NODES_KEY else NODES_URL
+    log("USAGE", f"自动轮换: 把 {display_url} 填入 edgetunnel 后台「自定义优选IP」框 (一次配置, 之后自动更新)")
     log("WEBSITE", "完成 (GitHub Pages 部署由 workflow 执行)")
 
 if __name__ == "__main__":
