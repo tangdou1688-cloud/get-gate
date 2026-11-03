@@ -53,6 +53,12 @@ def main() -> None:
         )
     history = state.fetch_previous_nodes(cfg.previous_data_url, cfg.http_timeout)
     unique_nodes = sources.dedupe(list(sstp_nodes) + history)
+    gate_log.info(
+        "合并候选: 新 %d + 历史 %d -> 去重后 %d",
+        len(sstp_nodes),
+        len(history),
+        len(unique_nodes),
+    )
     if cfg.max_check_nodes > 0:
         unique_nodes = unique_nodes[: cfg.max_check_nodes]
 

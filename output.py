@@ -47,7 +47,12 @@ NETWORK_BUCKETS = (
 
 
 def _node_sort_key(node: dict[str, Any]) -> tuple[Any, ...]:
+    """纯净度高的排前面; 无纯净度的排后面; 同纯度按延迟升序."""
+    purity = (node.get("purity") or {}).get("purity")
+    has_purity = isinstance(purity, (int, float))
     return (
+        0 if has_purity else 1,
+        -(purity if has_purity else 0),
         node.get("latency_ms") is None,
         node.get("latency_ms") or 0,
         node.get("host") or "",
