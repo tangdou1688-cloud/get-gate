@@ -47,12 +47,12 @@ NETWORK_BUCKETS = (
 
 
 def _node_sort_key(node: dict[str, Any]) -> tuple[Any, ...]:
-    """纯净度高的排前面; 无纯净度的排后面; 同纯度按延迟升序."""
-    purity = (node.get("purity") or {}).get("purity")
-    has_purity = isinstance(purity, (int, float))
+    """欺诈分越低越靠前; 无欺诈分的排后面; 同分按延迟升序."""
+    fraud = (node.get("purity") or {}).get("scamalytics")
+    has_fraud = isinstance(fraud, (int, float))
     return (
-        0 if has_purity else 1,
-        -(purity if has_purity else 0),
+        0 if has_fraud else 1,
+        fraud if has_fraud else 0,
         node.get("latency_ms") is None,
         node.get("latency_ms") or 0,
         node.get("host") or "",
@@ -144,12 +144,10 @@ def build_nodes_text(
             for order, node in enumerate(bucket, 1):
                 entry = _pick_entry(edge_hosts, ports, index)
                 index += 1
-                purity = (node.get("purity") or {}).get("purity")
-                purity_suffix = (
-                    f"-{int(round(float(purity)))}%" if isinstance(purity, (int, float)) else ""
-                )
+                fraud = (node.get("purity") or {}).get("scamalytics")
+                fraud_suffix = f"-F{int(round(float(fraud)))}" if isinstance(fraud, (int, float)) else ""
                 lines.append(
-                    f"{entry}#{zh}-{label}-{order:02d}{purity_suffix}"
+                    f"{entry}#{zh}-{label}-{order:02d}{fraud_suffix}"
                     f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
                 )
     return "\n".join(lines) + "\n"
