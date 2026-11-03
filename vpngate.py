@@ -87,7 +87,17 @@ def main() -> None:
             max(values) - min(values),
         )
 
-    rescued = checker.rescue_with_sstp_probe(results, cfg)
+    checker.probe_latencies(results, cfg)
+    rescued = checker.apply_probe_results(results)
+    compared = [item for item in results if item.get("worker_latency_ms") and item.get("probe_latency_ms")][:10]
+    for item in compared:
+        worker_log.info(
+            "口径对比 %s:%s -> worker=%sms, probe=%sms",
+            item["host"],
+            item["port"],
+            item["worker_latency_ms"],
+            item["probe_latency_ms"],
+        )
     success = [item for item in results if item.get("success")]
     failed = [item for item in results if not item.get("success")]
     worker_errors = [item for item in failed if item.get("worker_error")]

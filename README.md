@@ -105,7 +105,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 3. 点保存
 4. 客户端刷新订阅 → 每次刷新 edgetunnel 都重新拉取一次 nodes.txt，节点自动更新
 
-> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01-2801ms$sstp://vpn:vpn@节点:端口`。名称末尾的 `-2801ms` 是 Worker 全链检测耗时；`~664ms` 表示该节点只通过 SSTP 握手兜底（未做数据链路验证），两种数值不可直接比较。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每小时自动换、零手动。
+> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01-2801ms$sstp://vpn:vpn@节点:端口`。名称末尾的毫秒是**我们自己独立做的 SSTP 握手测速**（与 Worker 检测无关，所有节点同口径）；`~664ms` 表示该节点 Worker 判失败、但握手通过（未做数据链路验证）。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每小时自动换、零手动。
 
 ---
 
@@ -160,7 +160,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 | `EDGE_PORTS` | `443` | 入口端口池；默认只用 443。想试备用端口可设 `443,2053,8443`（部分网络会封这些端口，导致节点全超时） |
 | `CHECK_RETRIES` | `1` | 单节点检测失败后的重试次数（0 = 不重试） |
 | `CHECK_SAMPLES` | `3` | 成功节点重复采样次数，取中位数作为延迟（1 = 单次，抖动大） |
-| `SSTP_PROBE` | `1` | Worker 判失败后再做一次 SSTP 握手兜底，通过即保留（宁可多推不可错杀）；`0` 关闭 |
+| `SSTP_PROBE` | `1` | 对所有节点独立做一次 TLS+SSTP 握手测速（命名用这个值）；Worker 判失败但握手通过的节点予以保留；`0` 关闭 |
 | `SSTP_PROBE_TIMEOUT` | `8` | 兜底 SSTP 握手超时（秒） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
 | `SECRET_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<SECRET_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |

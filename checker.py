@@ -187,43 +187,52 @@ def probe_sstp(host: str, port: int, timeout: float) -> tuple[float, bytes]:
             return (time.time() - started) * 1000, tls.recv(64)
 
 
-def rescue_with_sstp_probe(results: list[dict[str, Any]], cfg: Config) -> int:
-    """对 Worker 判失败的节点补一次 SSTP 握手验证.
+def probe_latencies(results: list[dict[str, Any]], cfg: Config) -> None:
+    """对所有节点做一次独立的 SSTP 握手测速 (不依赖 Worker 的 iplocate 检测).
 
-    原则: 宁可多推不可错杀 —— Worker 的严格判定 (iplocate.io + 12s 门槛) 会误杀
-    真实可用的节点, 这里用更宽松的 SSTP 握手作为兜底, 通过即保留.
+    测得的 probe_latency_ms 是 TLS+SSTP 握手 RTT, 与 Worker 的全链耗时口径不同,
+    但同口径可比, 用来给节点命名/排序.
     """
-    if not cfg.sstp_probe:
-        return 0
-    failed = [item for item in results if not item.get("success")]
-    if not failed:
-        return 0
+    if not cfg.sstp_probe or not results:
+        return
 
-    def _try(item: dict[str, Any]) -> float | None:
+    def _one(item: dict[str, Any]) -> int | None:
         try:
             elapsed_ms, response = probe_sstp(item["host"], item["port"], cfg.sstp_probe_timeout)
         except Exception:
             return None
         if b"HTTP/" in response and b" 200" in response:
-            return elapsed_ms
+            return round(elapsed_ms)
         return None
 
-    rescued = 0
     with ThreadPoolExecutor(max_workers=cfg.concurrency) as pool:
-        futures = {pool.submit(_try, item): item for item in failed}
+        futures = {pool.submit(_one, item): item for item in results}
         for future in as_completed(futures):
             item = futures[future]
-            elapsed_ms = future.result()
-            if elapsed_ms is None:
-                continue
-            item["success"] = True
-            item["status"] = "success"
-            item["latency_ms"] = round(elapsed_ms)
-            item["error"] = None
-            item["verified_by"] = "sstp_probe"
-            if item.get("residential") in (None, "unknown"):
-                item["residential"] = classify_network(item["host"], None)
-            rescued += 1
+            probe_ms = future.result()
+            if probe_ms is not None:
+                item["probe_latency_ms"] = probe_ms
+
+
+def apply_probe_results(results: list[dict[str, Any]]) -> int:
+    """用独立测速结果覆盖命名延迟; Worker 判失败但握手通过的节点予以保留."""
+    rescued = 0
+    for item in results:
+        probe_ms = item.get("probe_latency_ms")
+        if probe_ms is None:
+            continue
+        if item.get("success"):
+            item["worker_latency_ms"] = item.get("latency_ms")
+            item["latency_ms"] = probe_ms
+            continue
+        item["success"] = True
+        item["status"] = "success"
+        item["latency_ms"] = probe_ms
+        item["error"] = None
+        item["verified_by"] = "sstp_probe"
+        if item.get("residential") in (None, "unknown"):
+            item["residential"] = classify_network(item["host"], None)
+        rescued += 1
     return rescued
 
 
