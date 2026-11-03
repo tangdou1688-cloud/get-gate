@@ -139,7 +139,10 @@ output.py        data.json / index.html / nodes.txt 生成
 logsetup.py      标准 logging 分区输出
 edge_hosts.txt   静态优选域名, 一行一个
 optimal_apis.txt 优选 API 默认列表, # section: ct|cu|cmcc|extra 分组
+tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP 端口
 ~~~
+
+> 端口假设已实测（2026-11-03，GitHub Runner）：抽样 10 个节点，`remote` 端口 10/10 返回 `HTTP/1.1 200 OK`（SSTP 握手成功）；其中 1 个节点仅 `1908` 端口可用、443 超时。因此 `to_sstp_nodes` 继续使用 OpenVPN 的 remote 端口，不改成 443。
 
 > `HOSTS_ENTRY` 是旧版遗留变量：设置后用它的值整体替代 `edge_hosts.txt` 的静态域名（`EDGE_HOSTS_EXTRA` 仍会追加）。新部署建议直接改 `edge_hosts.txt`。
 
