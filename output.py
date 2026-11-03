@@ -80,6 +80,10 @@ def build_outputs(
         "datacenter_est": sum(1 for node in available if node.get("residential") == "datacenter"),
         "unknown_est": sum(1 for node in available if node.get("residential") == "unknown"),
         "history_nodes": history_count,
+        "purity_avg": round(
+            sum(item["purity"]["purity"] for item in available if item.get("purity")) /
+            max(1, sum(1 for item in available if item.get("purity")))
+        ),
     }
 
     by_country: dict[str, dict[str, Any]] = {}

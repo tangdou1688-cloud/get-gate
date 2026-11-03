@@ -54,6 +54,8 @@ def fetch_previous_nodes(url: str, timeout: float) -> list[dict[str, Any]]:
                 "ip": str(item.get("ip") or ""),
                 "country": str(item.get("country") or ""),
                 "country_code": str(item.get("country_code") or ""),
+                "exit": item.get("exit") if isinstance(item.get("exit"), dict) else None,
+                "purity": item.get("purity") if isinstance(item.get("purity"), dict) else None,
             }
         )
     log.info("历史节点: 从上一轮 data.json 取回 %d 个候选", len(nodes))
