@@ -1,11 +1,6 @@
-"""IP 纯净度综合评分: 多来源打分后合成 0-100 的纯净度.
+"""IP 纯净度: 仅使用 Scamalytics 欺诈分 (0-100, 越低越干净).
 
-来源 (均不依赖 key):
-  - Scamalytics 网页 Fraud Score (0-100, 越高越脏)
-  - proxycheck.io 免费接口 risk (0-100) + proxy 标记
-  - ip-api.com 免费接口 proxy/hosting 标记 (仅 IPv4, HTTP)
-
-合成: purity = 100 - 平均风险 - 标记惩罚, 结果夹在 0-100.
+purity = 100 - fraud_score, 结果夹在 0-100.
 只对新出现的出口 IP 查询; 历史 IP 复用上一轮 data.json 里的分数.
 """
 
@@ -25,71 +20,21 @@ UA = {"User-Agent": "Mozilla/5.0 (compatible; gate-purity/1.0)"}
 _FRAUD_RE = re.compile(r"Fraud Score:\s*(\d{1,3})", re.I)
 
 
-def _scamalytics(ip: str, session: requests.Session, timeout: float) -> int | None:
+def score_ip(ip: str, session: requests.Session, timeout: float) -> dict[str, Any] | None:
+    """查询 Scamalytics 欺诈分, 换算为 0-100 纯净度."""
     try:
         resp = session.get(f"https://scamalytics.com/ip/{ip}", timeout=timeout, headers=UA)
         if resp.status_code != 200:
             return None
         matched = _FRAUD_RE.search(resp.text)
-        return int(matched.group(1)) if matched else None
-    except Exception:
-        return None
-
-
-def _proxycheck(ip: str, session: requests.Session, timeout: float) -> dict[str, Any] | None:
-    try:
-        resp = session.get(
-            f"https://proxycheck.io/v2/{ip}?vpn=1&asn=1&risk=1", timeout=timeout, headers=UA
-        )
-        payload = resp.json()
-        data = payload.get(ip) or {}
-        risk = data.get("risk")
-        return {
-            "risk": int(risk) if isinstance(risk, (int, float)) else None,
-            "proxy": data.get("proxy") == "yes",
-        }
-    except Exception:
-        return None
-
-
-def _ipapi(ip: str, session: requests.Session, timeout: float) -> dict[str, Any] | None:
-    try:
-        resp = session.get(
-            f"http://ip-api.com/json/{ip}?fields=status,proxy,hosting", timeout=timeout, headers=UA
-        )
-        payload = resp.json()
-        if payload.get("status") != "success":
+        if not matched:
             return None
-        return {"proxy": bool(payload.get("proxy")), "hosting": bool(payload.get("hosting"))}
+        fraud = int(matched.group(1))
     except Exception:
         return None
 
-
-def score_ip(ip: str, session: requests.Session, timeout: float) -> dict[str, Any] | None:
-    """查询单个 IP 的多来源数据并合成纯净度 (0-100)."""
-    scam = _scamalytics(ip, session, timeout)
-    proxycheck = _proxycheck(ip, session, timeout)
-    ipapi = _ipapi(ip, session, timeout)
-
-    risks = [value for value in (scam, (proxycheck or {}).get("risk")) if value is not None]
-    if not risks and not ipapi and not proxycheck:
-        return None
-
-    base = sum(risks) / len(risks) if risks else 0.0
-    penalty = 0
-    if proxycheck and proxycheck.get("proxy"):
-        penalty += 15
-    if ipapi and ipapi.get("proxy"):
-        penalty += 10
-    if ipapi and ipapi.get("hosting"):
-        penalty += 20
-    purity = max(0, min(100, round(100 - base - penalty)))
-    return {
-        "purity": purity,
-        "scamalytics": scam,
-        "proxycheck": proxycheck,
-        "ipapi": ipapi,
-    }
+    purity = max(0, min(100, 100 - fraud))
+    return {"purity": purity, "scamalytics": fraud}
 
 
 def annotate(
@@ -104,6 +49,8 @@ def annotate(
         ip = (item.get("exit") or {}).get("ip")
         score = item.get("purity")
         if ip and isinstance(score, dict) and score.get("purity") is not None:
+            if "proxycheck" in score or "ipapi" in score:
+                continue  # 旧版多来源口径, 作废重查
             cached[str(ip)] = score
 
     pending: list[str] = []
@@ -121,7 +68,7 @@ def annotate(
     fetched: dict[str, dict[str, Any]] = {}
     if pending:
         session = requests.Session()
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=6) as pool:
             futures = {pool.submit(score_ip, ip, session, cfg.purity_timeout): ip for ip in pending}
             for future in as_completed(futures):
                 ip = futures[future]
@@ -144,7 +91,7 @@ def annotate(
             item["purity"] = score
             annotated += 1
     log.info(
-        "纯净度: 历史复用 %d, 本轮新查 %d/%d, 已标注 %d 个节点",
+        "纯净度(Scamalytics): 历史复用 %d, 本轮新查 %d/%d, 已标注 %d 个节点",
         len(cached),
         len(fetched),
         len(pending),
