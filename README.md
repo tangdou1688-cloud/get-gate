@@ -105,7 +105,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 3. 点保存
 4. 客户端刷新订阅 → 每次刷新 edgetunnel 都重新拉取一次 nodes.txt，节点自动更新
 
-> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01$sstp://vpn:vpn@节点:端口`。节点名不含测速值，延迟由客户端自己测（Karing/Clash 的 url-test）。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每小时自动换、零手动。
+> 原理：`nodes.txt` 是纯节点行版本（无注释头），每行 `入口域名:端口#国家-住宅-01-45%$sstp://vpn:vpn@节点:端口`。名称末尾的 `45%` 是该出口 IP 的多来源综合纯净度（Scamalytics + proxycheck.io + ip-api），没有出口 IP 的兜底节点不带该后缀。延迟由客户端自己测。edgetunnel 下次生成订阅时会 fetch 这个网址、逐行解析成优选入口 + 链式代理指令。你只填一次，之后节点每小时自动换、零手动。
 
 ---
 

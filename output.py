@@ -139,8 +139,10 @@ def build_nodes_text(
             for order, node in enumerate(bucket, 1):
                 entry = _pick_entry(edge_hosts, ports, index)
                 index += 1
+                purity = (node.get("purity") or {}).get("purity")
+                purity_suffix = f"-{int(purity)}%" if isinstance(purity, (int, float)) else ""
                 lines.append(
-                    f"{entry}#{zh}-{label}-{order:02d}"
+                    f"{entry}#{zh}-{label}-{order:02d}{purity_suffix}"
                     f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
                 )
     return "\n".join(lines) + "\n"
