@@ -72,7 +72,7 @@ edgetunnel 后台「自定义优选IP」框填 https://…/nodes.txt
 
 | 文件 | 位置 | 改成什么 | 为什么 |
 | :--- | :--- | :--- | :--- |
-| GitHub Actions Secret | `CHECK_WORKER` | 你的检测 Worker 域名，形如 `https://xxx.workers.dev/check?sstp=vpn:vpn@` | 检测统一走你自己的 Worker；**只放 Secret，不要提交进仓库** |
+| GitHub Actions Secret | `DOMAIN` | 你的检测 Worker 域名，形如 `https://xxx.workers.dev/check?sstp=vpn:vpn@` | 检测统一走你自己的 Worker；**只放 Secret，不要提交进仓库** |
 | vpngate.py | `NODES_URL` | 把里面写死的固定地址换成 `你的用户名/仓库名` | 自动更新时用到的固定地址 |
 
 > **注意**：`vpngate.py` 中**不需要**配置 `EDT_UUID` 和 `EDT_DOMAIN`。你之前看到的这两个变量是旧版遗留，现已删除。edgetunnel 后台会自己处理 UUID 和域名。
@@ -139,7 +139,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 | `OPTIMAL_API_EXTRA` | 8 个聚合源 | 追加任意优选 API（逗号/换行分隔） |
 | `OPTIMAL_API` | 空 | 旧版总开关；设置后**完全替代**上面四项（逗号分隔） |
 | `OPTIMAL_API_TIMEOUT` | `15` | 单个优选 API 请求超时（秒） |
-| `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量或 Actions Secret `CHECK_WORKER` 里，不要写进代码/仓库** |
+| `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
 | `NODES_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<NODES_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |
 | `NODES_URL` | 按 `SITE_URL` + `NODES_KEY` 自动拼接 | 固定订阅地址（fork 后改成你自己的） |
 
@@ -174,7 +174,7 @@ https://你的GitHub用户名.github.io/仓库名/nodes.txt
 到 Actions 页看最近一次运行是否成功、cron 是否还在。
 
 ### 检测 Worker 报错
-确认 Worker 部署成功、域名填对（Actions Secret `CHECK_WORKER`），浏览器直接访问 `https://你的Worker/check?sstp=...` 看是否返回 JSON。
+确认 Worker 部署成功、域名填对（Actions Secret `DOMAIN`），浏览器直接访问 `https://你的Worker/check?sstp=...` 看是否返回 JSON。
 
 ### 不知道 UUID 和节点域名在哪里看
 登录 edgetunnel 后台（`https://你的域名/admin`），在后台首页就能看到。

@@ -647,7 +647,7 @@ def write_outputs(data, edge_hosts):
 # ---------------------------------------------------------------------------
 def main():
     if not WORKER_CHECK_URL:
-        die("未配置检测 Worker: 请设置环境变量 CHECK_WORKER (本地) 或 GitHub Actions Secret CHECK_WORKER")
+        die("未配置检测 Worker: 请设置环境变量 CHECK_WORKER (本地) 或 GitHub Actions Secret DOMAIN")
     if NODES_KEY and not NODES_KEY_RE.fullmatch(NODES_KEY):
         die("NODES_KEY 非法: 仅允许 A-Z a-z 0-9 _ -, 长度 16-64")
     session = requests.Session()
