@@ -65,6 +65,8 @@ def build_outputs(
     sstp_count: int,
     source: str,
     history_count: int = 0,
+    node_stats: dict[str, Any] | None = None,
+    blacklist_skipped: int = 0,
 ) -> dict[str, Any]:
     """汇总检测结果, 生成 data.json 内容."""
     results = list(results)
@@ -85,6 +87,7 @@ def build_outputs(
         "datacenter_est": sum(1 for node in available if node.get("residential") == "datacenter"),
         "unknown_est": sum(1 for node in available if node.get("residential") == "unknown"),
         "history_nodes": history_count,
+        "blacklist_skipped": blacklist_skipped,
         "purity_avg": int(round(
             sum(item["purity"]["purity"] for item in available if item.get("purity")) /
             max(1, sum(1 for item in available if item.get("purity")))
@@ -106,6 +109,7 @@ def build_outputs(
         "stats": stats,
         "countries": by_country,
         "available": available,
+        "node_stats": node_stats or {},
     }
 
 

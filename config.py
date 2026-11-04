@@ -46,6 +46,7 @@ class Config:
     purity_check: bool
     purity_timeout: float
     purity_max_new: int
+    node_blacklist_fails: int
 
     optimal_apis: list[str] = field(default_factory=list)
     optimal_api_timeout: float = 15.0
@@ -59,6 +60,8 @@ class Config:
     site_url: str = DEFAULT_SITE_URL
     nodes_url: str = ""
     previous_data_url: str = ""
+    blacklist_url: str = ""
+    blacklist_file: str = ""
 
     def validate(self) -> None:
         """校验必须项, 失败抛 ConfigError (对应旧版的 die 条件)."""
@@ -191,6 +194,7 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         purity_check=_env_value(env, "PURITY_CHECK", "1").lower() not in ("0", "false", "no", "off"),
         purity_timeout=float(_env_value(env, "PURITY_TIMEOUT", "10")),
         purity_max_new=max(0, int(_env_value(env, "PURITY_MAX_NEW", "100"))),
+        node_blacklist_fails=max(0, int(_env_value(env, "NODE_BLACKLIST_FAILS", "3"))),
         optimal_apis=optimal_apis,
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,
@@ -201,6 +205,8 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         site_url=site_url,
         nodes_url=nodes_url,
         previous_data_url=previous_data_url,
+        blacklist_url=_env_value(env, "BLACKLIST_URL"),
+        blacklist_file=_env_value(env, "BLACKLIST_FILE") or os.path.join(repo_dir, "blacklist.txt"),
     )
 
 

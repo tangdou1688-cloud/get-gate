@@ -51,13 +51,19 @@ def main() -> None:
         raise FatalError(
             f"从 {raw_count} 个原始节点中没有解析出任何 SSTP(TCP) 节点 — 数据格式可能已变化, 需要人工适配"
         )
-    history = state.fetch_previous_nodes(cfg.previous_data_url, cfg.http_timeout)
+    previous = state.fetch_previous_state(cfg.previous_data_url, cfg.http_timeout)
+    history = previous.nodes
+    node_stats = previous.stats
     unique_nodes = sources.dedupe(list(sstp_nodes) + history)
     gate_log.info(
         "合并候选: 新 %d + 历史 %d -> 去重后 %d",
         len(sstp_nodes),
         len(history),
         len(unique_nodes),
+    )
+    external_blacklist = state.load_external_blacklist(cfg)
+    unique_nodes, blacklist_skipped = state.filter_blacklisted(
+        unique_nodes, node_stats, external_blacklist, cfg
     )
     if cfg.max_check_nodes > 0:
         unique_nodes = unique_nodes[: cfg.max_check_nodes]
@@ -96,6 +102,7 @@ def main() -> None:
 
     checker.probe_latencies(results, cfg)
     rescued = checker.apply_probe_results(results)
+    state.update_stats(node_stats, results)
     purity.annotate(results, history, cfg)
     compared = [item for item in results if item.get("worker_latency_ms") and item.get("probe_latency_ms")][:10]
     for item in compared:
@@ -123,7 +130,9 @@ def main() -> None:
     if not success:
         raise FatalError("本次没有任何可用节点 (全部检测失败) — 不生成空结果, 保留上次产物")
 
-    data = output.build_outputs(results, raw_count, sstp_count, source, len(history))
+    data = output.build_outputs(
+        results, raw_count, sstp_count, source, len(history), node_stats, blacklist_skipped
+    )
     logsetup.get("RESULT").info("可用节点: %d", len(success))
     logsetup.get("RESULT").info("国家数量: %d", data["stats"]["countries"])
 
