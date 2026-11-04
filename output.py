@@ -46,13 +46,17 @@ NETWORK_BUCKETS = (
 )
 
 
+_TYPE_RANK = {"residential": 0, "datacenter": 1, "unknown": 2}
+
+
 def _node_sort_key(node: dict[str, Any]) -> tuple[Any, ...]:
-    """欺诈分越低越靠前; 无欺诈分的排后面; 同分按延迟升序."""
+    """欺诈分越低越靠前 (跨类型比较); 同分时住宅优先; 无分数排最后."""
     fraud = (node.get("purity") or {}).get("scamalytics")
     has_fraud = isinstance(fraud, (int, float))
     return (
         0 if has_fraud else 1,
         fraud if has_fraud else 0,
+        _TYPE_RANK.get(node.get("residential") or "unknown", 2),
         node.get("latency_ms") is None,
         node.get("latency_ms") or 0,
         node.get("host") or "",
@@ -143,17 +147,21 @@ def build_nodes_text(
         code = str(group.get("code") or "?").upper()
         zh = COUNTRY_ZH.get(code) or (code if code and code != "?" else country_name)
         nodes = sorted(group["nodes"], key=_node_sort_key)
-        for kind, label in NETWORK_BUCKETS:
-            bucket = [node for node in nodes if (node.get("residential") or "unknown") == kind]
-            for order, node in enumerate(bucket, 1):
-                entry = _pick_entry(edge_hosts, ports, index)
-                index += 1
-                fraud = (node.get("purity") or {}).get("scamalytics")
-                fraud_suffix = f"-F{int(round(float(fraud)))}" if isinstance(fraud, (int, float)) else ""
-                lines.append(
-                    f"{entry}#{zh}-{label}-{order:02d}{fraud_suffix}"
-                    f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
-                )
+        labels = dict(NETWORK_BUCKETS)
+        counters = {kind: 0 for kind, _ in NETWORK_BUCKETS}
+        for node in nodes:
+            kind = node.get("residential") or "unknown"
+            if kind not in labels:
+                kind = "unknown"
+            counters[kind] += 1
+            entry = _pick_entry(edge_hosts, ports, index)
+            index += 1
+            fraud = (node.get("purity") or {}).get("scamalytics")
+            fraud_suffix = f"-F{int(round(float(fraud)))}" if isinstance(fraud, (int, float)) else ""
+            lines.append(
+                f"{entry}#{zh}-{labels[kind]}-{counters[kind]:02d}{fraud_suffix}"
+                f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
+            )
     return "\n".join(lines) + "\n"
 
 
