@@ -54,7 +54,7 @@ def _latency_score(latency_ms: Any) -> float:
 def quality_score(node: dict[str, Any]) -> int | None:
     """综合质量分 0-10 (权重规则见 README).
 
-    风险 45% + 类型 20% + 延迟 10% + 验证方式 10% + 解锁潜力 15%.
+    风险 45% + 类型 20% + 延迟 15% + 验证方式 5% + 解锁潜力 15%.
     解锁能力无法在 CI 中实测, 这里用"住宅类型"作为潜力代理值.
     """
     fraud = (node.get("purity") or {}).get("scamalytics")
@@ -68,8 +68,8 @@ def quality_score(node: dict[str, Any]) -> int | None:
     total = (
         0.45 * risk
         + 0.20 * type_score
-        + 0.10 * _latency_score(node.get("latency_ms"))
-        + 0.10 * verified
+        + 0.15 * _latency_score(node.get("latency_ms"))
+        + 0.05 * verified
         + 0.15 * unlock_score
     )
     return max(0, min(10, int(round(total))))
