@@ -160,6 +160,7 @@ def fetch_previous_state(url: str, timeout: float) -> PreviousState:
         return PreviousState()
 
     nodes: list[dict[str, Any]] = []
+    dropped = 0
     for item in available:
         if not isinstance(item, dict):
             continue
@@ -170,6 +171,11 @@ def fetch_previous_state(url: str, timeout: float) -> PreviousState:
             continue
         if not host or not (1 <= port <= 65535):
             continue
+        purity = item.get("purity") if isinstance(item.get("purity"), dict) else None
+        quality = item.get("quality")
+        if not purity or purity.get("scamalytics") is None or not isinstance(quality, (int, float)):
+            dropped += 1
+            continue
         nodes.append(
             {
                 "host": host,
@@ -178,10 +184,12 @@ def fetch_previous_state(url: str, timeout: float) -> PreviousState:
                 "country": str(item.get("country") or ""),
                 "country_code": str(item.get("country_code") or ""),
                 "exit": item.get("exit") if isinstance(item.get("exit"), dict) else None,
-                "purity": item.get("purity") if isinstance(item.get("purity"), dict) else None,
+                "purity": purity,
             }
         )
     raw_stats = data.get("node_stats") if isinstance(data, dict) else None
     stats = {str(k): v for k, v in (raw_stats or {}).items() if isinstance(v, dict)}
+    if dropped:
+        log.info("历史节点: 丢弃 %d 个无 F/Q 的旧记录", dropped)
     log.info("历史节点: 从上一轮 data.json 取回 %d 个候选, %d 条统计", len(nodes), len(stats))
     return PreviousState(nodes=nodes, stats=stats)
