@@ -158,8 +158,10 @@ def build_nodes_text(
             index += 1
             fraud = (node.get("purity") or {}).get("scamalytics")
             fraud_suffix = f"-F{int(round(float(fraud)))}" if isinstance(fraud, (int, float)) else ""
+            quality = node.get("quality")
+            quality_suffix = f"-Q{int(round(float(quality)))}" if isinstance(quality, (int, float)) else ""
             lines.append(
-                f"{entry}#{zh}-{labels[kind]}-{counters[kind]:02d}{fraud_suffix}"
+                f"{entry}#{zh}-{labels[kind]}-{counters[kind]:02d}{fraud_suffix}{quality_suffix}"
                 f"$sstp://vpn:vpn@{node['host']}:{node['port']}"
             )
     return "\n".join(lines) + "\n"
