@@ -162,7 +162,7 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 | `CHECK_SAMPLES` | `1` | Worker 成功后的采样次数（仅写入 `data.json`，不参与命名；1 = 单次） |
 | `SSTP_PROBE` | `1` | 对所有节点独立做一次 SSTP 握手验证；Worker 判失败但握手通过的节点予以保留（不参与命名）；`0` 关闭 |
 | `SSTP_PROBE_TIMEOUT` | `8` | 兜底 SSTP 握手超时（秒） |
-| `PURITY_CHECK` | `1` | Scamalytics 欺诈分换算的纯净度（`purity = 100 - fraud_score`），写入 `data.json` 的 `purity` 与节点名；`0` 关闭 |
+| `PURITY_CHECK` | `1` | Scamalytics 欺诈分换算的纯净度（`purity = 100 - fraud_score`，节点名 `F<分数>`）；同时给出综合质量分 `quality`（0–10，机房 -2、未知 -1）；`0` 关闭 |
 | `PURITY_TIMEOUT` | `10` | 单次纯净度查询超时（秒） |
 | `PURITY_MAX_NEW` | `100` | 每轮最多查询的新出口 IP 数；历史 IP 复用上一轮分数 |
 | `NODE_BLACKLIST_FAILS` | `5` | 同一节点连续失败达到该次数后，24 小时内跳过检测并清出历史/输出；24h 后移出黑名单；`0` 关闭 |

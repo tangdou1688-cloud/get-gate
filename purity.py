@@ -37,6 +37,15 @@ def score_ip(ip: str, session: requests.Session, timeout: float) -> dict[str, An
     return {"purity": purity, "scamalytics": fraud}
 
 
+def quality_score(fraud: Any, residential: str | None) -> int | None:
+    """综合质量分 0-10: 欺诈分占主导, 机房/未知类型扣分."""
+    if not isinstance(fraud, (int, float)):
+        return None
+    base = (100 - float(fraud)) / 10.0
+    penalty = 2.0 if residential == "datacenter" else 1.0 if residential == "unknown" else 0.0
+    return max(0, min(10, int(round(base - penalty))))
+
+
 def annotate(
     results: list[dict[str, Any]], history: list[dict[str, Any]], cfg: Config
 ) -> int:
@@ -89,6 +98,7 @@ def annotate(
         score = merged.get(ip)
         if score:
             item["purity"] = score
+            item["quality"] = quality_score(score.get("scamalytics"), item.get("residential"))
             annotated += 1
     log.info(
         "纯净度(Scamalytics): 历史复用 %d, 本轮新查 %d/%d, 已标注 %d 个节点",

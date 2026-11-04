@@ -97,6 +97,7 @@ function rowHtml(n) {
     '<td>SSTP</td>' +
     '<td class="lat">' + (n.latency_ms != null ? n.latency_ms + ' ms' : '-') + '</td>' +
     '<td class="lat">' + (n.purity && n.purity.scamalytics != null ? 'F' + Math.round(Number(n.purity.scamalytics)) : '-') + '</td>' +
+    '<td class="lat">' + (n.quality != null ? Math.round(Number(n.quality)) + '/10' : '-') + '</td>' +
     '<td class="hide-m" style="color:var(--muted)">' + exit + '</td>' +
     '<td>' + badge + '</td>' +
     '<td class="hide-m" style="color:var(--muted)">' + date + '</td>' +
@@ -124,7 +125,7 @@ function renderCountries() {
         '<span>🌏 ' + name + ' <span class="tag">' + (g.code || "") + '</span></span>' +
         '<span class="tag">' + g.count + ' 个节点 · 住宅 ' + g.residential + ' · 机房 ' + g.datacenter + '</span>' +
       '</div>' +
-      '<table><thead><tr><th>Host:Port</th><th class="hide-m">国码</th><th>协议</th><th>延迟</th><th>欺诈分</th><th class="hide-m">出口</th><th>类型</th><th class="hide-m">检测日期</th></tr></thead>' +
+      '<table><thead><tr><th>Host:Port</th><th class="hide-m">国码</th><th>协议</th><th>延迟</th><th>欺诈分</th><th>质量</th><th class="hide-m">出口</th><th>类型</th><th class="hide-m">检测日期</th></tr></thead>' +
       '<tbody>' + g.nodes.map(rowHtml).join("") + '</tbody></table>' +
     '</div>';
   }).join("");
