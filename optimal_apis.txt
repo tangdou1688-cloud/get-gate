@@ -23,3 +23,9 @@ https://addressesapi.090227.xyz/ip.164746.xyz
 https://ipdb.api.030101.xyz/?type=bestcf&country=false
 https://raw.githubusercontent.com/ymyuuu/IPDB/main/BestCF/bestcfv4.txt
 https://ip.164746.xyz/ipTop.html
+# BestCF 聚合 (已校验 100% 落在 Cloudflare IPv4 段)
+https://bestcf.pages.dev/wetest/ipv4.txt
+https://bestcf.pages.dev/cfyes/ipv4.txt
+https://bestcf.pages.dev/gslege/SG.txt
+https://bestcf.pages.dev/gslege/DE.txt
+https://bestcf.pages.dev/gslege/US.txt
