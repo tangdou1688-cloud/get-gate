@@ -18,8 +18,6 @@ from config import Config
 from logsetup import get
 
 log = get("VPN GATE")
-STATS_TTL_SECONDS = 7 * 24 * 3600
-SKIP_WINDOW_SECONDS = 24 * 3600
 
 
 @dataclass
@@ -100,17 +98,23 @@ def filter_blacklisted(
             item = stats.get(key) or {}
             streak = int(item.get("fail_streak") or 0)
             last_fail = float(item.get("last_fail") or 0)
-            if streak >= cfg.node_blacklist_fails and now - last_fail < SKIP_WINDOW_SECONDS:
+            if streak >= cfg.node_blacklist_fails and now - last_fail < cfg.blacklist_skip_hours * 3600:
                 skipped += 1
                 continue
         kept.append(node)
     if skipped:
-        log.info("黑名单: 跳过 %d 个连续失败/外部标记节点 (24h 内不重试)", skipped)
+        log.info(
+            "黑名单: 跳过 %d 个连续失败/外部标记节点 (%sh 内不重试)",
+            skipped,
+            cfg.blacklist_skip_hours,
+        )
     return kept, skipped
 
 
-def update_stats(stats: dict[str, dict[str, Any]], results: list[dict[str, Any]]) -> None:
-    """更新每个节点的 seen/ok/fail_streak, 并清理过期记录."""
+def update_stats(
+    stats: dict[str, dict[str, Any]], results: list[dict[str, Any]], cfg: Config
+) -> None:
+    """更新每个节点的 seen/ok/fail_streak, 并按 STATS_TTL_DAYS 清理过期记录."""
     now = int(time.time())
     for item in results:
         key = node_key(item)
@@ -125,7 +129,7 @@ def update_stats(stats: dict[str, dict[str, Any]], results: list[dict[str, Any]]
             record["last_fail"] = now
         record["last"] = now
         stats[key] = record
-    cutoff = now - STATS_TTL_SECONDS
+    cutoff = now - cfg.stats_ttl_days * 24 * 3600
     for key in [k for k, v in stats.items() if int(v.get("last") or 0) < cutoff]:
         stats.pop(key, None)
 

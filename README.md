@@ -168,6 +168,8 @@ tools/probe_sstp.py  诊断脚本: 验证 OpenVPN remote 端口是否就是 SSTP
 | `NODE_BLACKLIST_FAILS` | `5` | 同一节点连续失败达到该次数后，24 小时内跳过检测并清出历史/输出；24h 后重新检测；`0` 关闭 |
 | `BLACKLIST_URL` | 空 | 外部黑名单 txt（逗号分隔多个 URL），每行 `host:port`，每轮拉取合并 |
 | `BLACKLIST_FILE` | 仓库根目录 `blacklist.txt` | 本地黑名单文件；客户端长期失败的节点写这里，下一轮 CI 自动清理 |
+| `BLACKLIST_SKIP_HOURS` | `24` | 连续失败拉黑后的跳过时长（小时），过期自动重新检测 |
+| `STATS_TTL_DAYS` | `7` | `node_stats` 记录保留天数（长期不出现的节点会被清理） |
 | `WORKER_CHECK_URL` | 未设置（必须配置） | 检测 Worker。**只填在本地环境变量 `CHECK_WORKER` 或 Actions Secret `DOMAIN` 里，不要写进代码/仓库** |
 | `SECRET_KEY` | 空 | 订阅密钥（16-64 位 `A-Za-z0-9_-`）。设置后产物只发布到 `/<SECRET_KEY>/nodes.txt`，根路径 404。**只放 Actions Secret** |
 | `NODES_URL` | 按 `SITE_URL` + `SECRET_KEY` 自动拼接 | 固定订阅地址（fork 后改成你自己的） |

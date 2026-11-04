@@ -47,6 +47,8 @@ class Config:
     purity_timeout: float
     purity_max_new: int
     node_blacklist_fails: int
+    blacklist_skip_hours: float
+    stats_ttl_days: int
 
     optimal_apis: list[str] = field(default_factory=list)
     optimal_api_timeout: float = 15.0
@@ -195,6 +197,8 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         purity_timeout=float(_env_value(env, "PURITY_TIMEOUT", "10")),
         purity_max_new=max(0, int(_env_value(env, "PURITY_MAX_NEW", "100"))),
         node_blacklist_fails=max(0, int(_env_value(env, "NODE_BLACKLIST_FAILS", "5"))),
+        blacklist_skip_hours=max(0.0, float(_env_value(env, "BLACKLIST_SKIP_HOURS", "24"))),
+        stats_ttl_days=max(1, int(_env_value(env, "STATS_TTL_DAYS", "7"))),
         optimal_apis=optimal_apis,
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,

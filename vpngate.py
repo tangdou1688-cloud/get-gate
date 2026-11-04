@@ -102,7 +102,7 @@ def main() -> None:
 
     checker.probe_latencies(results, cfg)
     rescued = checker.apply_probe_results(results)
-    state.update_stats(node_stats, results)
+    state.update_stats(node_stats, results, cfg)
     purity.annotate(results, history, cfg)
     compared = [item for item in results if item.get("worker_latency_ms") and item.get("probe_latency_ms")][:10]
     for item in compared:
