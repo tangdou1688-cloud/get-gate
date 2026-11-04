@@ -97,8 +97,13 @@ def filter_blacklisted(
         if cfg.node_blacklist_fails > 0:
             item = stats.get(key) or {}
             streak = int(item.get("fail_streak") or 0)
-            last_fail = float(item.get("last_fail") or 0)
-            if streak >= cfg.node_blacklist_fails and now - last_fail < cfg.blacklist_skip_hours * 3600:
+            if streak >= cfg.node_blacklist_fails:
+                last_fail = float(item.get("last_fail") or 0)
+                if now - last_fail < cfg.blacklist_skip_hours * 3600:
+                    skipped += 1
+                    continue
+                # 超过跳过窗口: 直接移出黑名单, 本轮不再检测, 下次重新出现时按新节点处理
+                stats.pop(key, None)
                 skipped += 1
                 continue
         kept.append(node)
