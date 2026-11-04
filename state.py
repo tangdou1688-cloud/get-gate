@@ -18,7 +18,6 @@ from config import Config
 from logsetup import get
 
 log = get("VPN GATE")
-SKIP_WINDOW_SECONDS = 24 * 3600
 STATS_TTL_SECONDS = 7 * 24 * 3600
 
 
@@ -85,7 +84,7 @@ def load_external_blacklist(cfg: Config) -> set[str]:
 def filter_blacklisted(
     nodes: list[dict[str, Any]], stats: dict[str, dict[str, Any]], external: set[str], cfg: Config
 ) -> tuple[list[dict[str, Any]], int]:
-    """跳过外部黑名单与连续失败达到阈值的节点 (24h 内不再重试)."""
+    """跳过外部黑名单与连续失败达到阈值的节点 (永久拉黑, 不再检测)."""
     if not external and cfg.node_blacklist_fails <= 0:
         return nodes, 0
     now = time.time()
@@ -99,13 +98,12 @@ def filter_blacklisted(
         if cfg.node_blacklist_fails > 0:
             item = stats.get(key) or {}
             streak = int(item.get("fail_streak") or 0)
-            last_fail = float(item.get("last_fail") or 0)
-            if streak >= cfg.node_blacklist_fails and now - last_fail < SKIP_WINDOW_SECONDS:
+            if streak >= cfg.node_blacklist_fails:
                 skipped += 1
                 continue
         kept.append(node)
     if skipped:
-        log.info("黑名单: 跳过 %d 个连续失败/外部标记节点", skipped)
+        log.info("黑名单: 跳过 %d 个连续失败/外部标记节点 (不再检测)", skipped)
     return kept, skipped
 
 
@@ -126,7 +124,11 @@ def update_stats(stats: dict[str, dict[str, Any]], results: list[dict[str, Any]]
         record["last"] = now
         stats[key] = record
     cutoff = now - STATS_TTL_SECONDS
-    for key in [k for k, v in stats.items() if int(v.get("last") or 0) < cutoff]:
+    for key in [
+        k
+        for k, v in stats.items()
+        if int(v.get("last") or 0) < cutoff and int(v.get("fail_streak") or 0) == 0
+    ]:
         stats.pop(key, None)
 
 

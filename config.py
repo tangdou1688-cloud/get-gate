@@ -194,7 +194,7 @@ def load_config(env: Mapping[str, str] | None = None, repo_dir: str | None = Non
         purity_check=_env_value(env, "PURITY_CHECK", "1").lower() not in ("0", "false", "no", "off"),
         purity_timeout=float(_env_value(env, "PURITY_TIMEOUT", "10")),
         purity_max_new=max(0, int(_env_value(env, "PURITY_MAX_NEW", "100"))),
-        node_blacklist_fails=max(0, int(_env_value(env, "NODE_BLACKLIST_FAILS", "3"))),
+        node_blacklist_fails=max(0, int(_env_value(env, "NODE_BLACKLIST_FAILS", "5"))),
         optimal_apis=optimal_apis,
         optimal_api_timeout=float(_env_value(env, "OPTIMAL_API_TIMEOUT", "15")),
         edge_hosts=edge_hosts,
