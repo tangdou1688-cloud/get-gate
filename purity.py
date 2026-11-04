@@ -37,13 +37,42 @@ def score_ip(ip: str, session: requests.Session, timeout: float) -> dict[str, An
     return {"purity": purity, "scamalytics": fraud}
 
 
-def quality_score(fraud: Any, residential: str | None) -> int | None:
-    """综合质量分 0-10: 欺诈分占主导, 机房/未知类型扣分."""
+def _latency_score(latency_ms: Any) -> float:
+    """延迟换算 0-10: <=800ms 满分, 3000ms 为 5 分, >=6000ms 为 0."""
+    if not isinstance(latency_ms, (int, float)):
+        return 5.0
+    ms = float(latency_ms)
+    if ms <= 800:
+        return 10.0
+    if ms <= 3000:
+        return 10.0 - (ms - 800) / 2200 * 5.0
+    if ms <= 6000:
+        return 5.0 - (ms - 3000) / 3000 * 5.0
+    return 0.0
+
+
+def quality_score(node: dict[str, Any]) -> int | None:
+    """综合质量分 0-10 (权重规则见 README).
+
+    风险 45% + 类型 20% + 延迟 20% + 验证方式 10% + 解锁潜力 5%.
+    解锁能力无法在 CI 中实测, 这里用"住宅类型"作为潜力代理值.
+    """
+    fraud = (node.get("purity") or {}).get("scamalytics")
     if not isinstance(fraud, (int, float)):
         return None
-    base = (100 - float(fraud)) / 10.0
-    penalty = 2.0 if residential == "datacenter" else 1.0 if residential == "unknown" else 0.0
-    return max(0, min(10, int(round(base - penalty))))
+    risk = (100.0 - float(fraud)) / 10.0
+    kind = node.get("residential") or "unknown"
+    type_score = {"residential": 10.0, "datacenter": 4.0, "unknown": 6.0}.get(kind, 6.0)
+    unlock_score = {"residential": 10.0, "datacenter": 1.0, "unknown": 5.0}.get(kind, 5.0)
+    verified = 10.0 if node.get("verified_by") == "worker" else 6.0
+    total = (
+        0.45 * risk
+        + 0.20 * type_score
+        + 0.20 * _latency_score(node.get("latency_ms"))
+        + 0.10 * verified
+        + 0.05 * unlock_score
+    )
+    return max(0, min(10, int(round(total))))
 
 
 def annotate(
@@ -98,7 +127,7 @@ def annotate(
         score = merged.get(ip)
         if score:
             item["purity"] = score
-            item["quality"] = quality_score(score.get("scamalytics"), item.get("residential"))
+            item["quality"] = quality_score(item)
             annotated += 1
     log.info(
         "纯净度(Scamalytics): 历史复用 %d, 本轮新查 %d/%d, 已标注 %d 个节点",
